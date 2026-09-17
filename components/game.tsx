@@ -4,9 +4,11 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { gameApi } from "@/lib/game-client";
 import type { PublicPlay } from "@/lib/play-service";
-import { spinsLabel, timesLabel } from "@/lib/config";
+import { formatBRL, spinsLabel } from "@/lib/config";
 import type { Prize } from "@/lib/prizes";
+import { quoteFor } from "@/lib/pricing";
 import { CheckoutForm } from "./checkout-form";
+import { SpinsPicker } from "./spins-picker";
 import { PaymentModal } from "./payment-modal";
 import { PrizeResult, type SpinResult } from "./prize-result";
 import { useTheme } from "./theme";
@@ -37,6 +39,8 @@ export function Game({
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<SpinResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [spinsToBuy, setSpinsToBuy] = useState(spinsPerPayment);
+  const [buying, setBuying] = useState(false);
   const wheelRef = useRef<WheelHandle>(null);
 
   // Retoma a sessão de quem já se cadastrou (ex.: recarregou a página).
@@ -154,8 +158,9 @@ export function Game({
             .
           </h1>
           <p className="mx-auto mt-3 max-w-md text-balance text-sm text-ink-muted sm:text-base">
-            {priceLabel} no Pix e você gira {timesLabel(spinsPerPayment)}. Deu
-            prêmio, o motorista entrega na hora — aqui mesmo, dentro do carro.
+            Giro a {priceLabel} no Pix, e quanto mais giros, maior o desconto.
+            Deu prêmio, o motorista entrega na hora — aqui mesmo, dentro do
+            carro.
           </p>
         </div>
 
@@ -223,30 +228,56 @@ export function Game({
                     </h2>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {Array.from({ length: Math.max(spinsPerPayment, spinsLeft) }).map(
-                      (_, index) => (
-                        <span
-                          key={index}
-                          className={`h-2.5 flex-1 rounded-full transition-colors duration-500 ${
-                            index < spinsLeft ? "bg-gold" : "bg-surface-3"
-                          }`}
-                        />
-                      ),
-                    )}
-                  </div>
+                  {spinsLeft > 0 ? (
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: Math.min(spinsLeft, 10) }).map(
+                        (_, index) => (
+                          <span
+                            key={index}
+                            className="h-2.5 flex-1 rounded-full bg-gold transition-colors duration-500"
+                          />
+                        ),
+                      )}
+                    </div>
+                  ) : null}
 
-                  <Button
-                    variant="gold"
-                    size="lg"
-                    onClick={spin}
-                    loading={spinning}
-                    className="w-full"
-                  >
-                    {spinsLeft > 0
-                      ? "Girar a roleta"
-                      : `Pagar ${priceLabel} e girar`}
-                  </Button>
+                  {spinsLeft > 0 ? (
+                    <Button
+                      variant="gold"
+                      size="lg"
+                      onClick={spin}
+                      loading={spinning}
+                      className="w-full"
+                    >
+                      Girar a roleta
+                    </Button>
+                  ) : null}
+
+                  {spinsLeft === 0 || buying ? (
+                    <div className="space-y-3">
+                      <SpinsPicker
+                        value={spinsToBuy}
+                        onChange={setSpinsToBuy}
+                        disabled={spinning}
+                      />
+                      <Button
+                        variant={spinsLeft > 0 ? "outline" : "gold"}
+                        size="lg"
+                        onClick={() => setPaymentOpen(true)}
+                        className="w-full"
+                      >
+                        Pagar {formatBRL(quoteFor(spinsToBuy).totalCents)} no Pix
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setBuying(true)}
+                      className="w-full"
+                    >
+                      Comprar mais giros
+                    </Button>
+                  )}
 
                   {premioAberto ? (
                     <Button
@@ -300,8 +331,7 @@ export function Game({
 
       {paymentOpen ? (
         <PaymentModal
-          spins={spinsPerPayment}
-          priceLabel={priceLabel}
+          spins={spinsToBuy}
           onClose={closePayment}
           onPaid={handlePaid}
         />

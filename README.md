@@ -1,8 +1,8 @@
 # 🎡 Girou, Ganhou!
 
 Roleta de prêmios para motorista de aplicativo. O passageiro lê o QR Code
-colado no encosto de cabeça, se cadastra, paga **R$ 3,00 no Pix** e ganha
-**1 giro** numa roleta de 6 fatias. Deu prêmio, o motorista entrega na hora,
+colado no encosto de cabeça, se cadastra, escolhe quantos giros quer numa
+régua e paga no Pix. Quanto mais giros, maior o desconto. Deu prêmio, o motorista entrega na hora,
 dentro do carro.
 
 ### Os prêmios e a chance de cada um
@@ -34,8 +34,8 @@ cores da festa (azul escuro, dourado e verde).
 | 1 | Passageiro aponta a câmera para o QR Code no encosto |
 | 2 | Cadastro rápido: nome e celular |
 | 3 | A roleta aparece com os prêmios à vista, e o letreiro do topo mostra quem já ganhou |
-| 4 | Ao tocar em **GIRAR**, abre o popup com o QR Code do Pix de R$ 3,00 |
-| 5 | Pix confirmado → o giro é liberado automaticamente |
+| 4 | Escolhe quantos giros na régua e toca em pagar; abre o popup com o QR Code do Pix |
+| 5 | Pix confirmado → os giros do pacote são liberados automaticamente |
 | 6 | Cada giro sorteia uma fatia; se for prêmio, gera um **código** (ex.: `TNV-5DG`) |
 | 7 | O motorista valida o código em `/motorista` e entrega o prêmio |
 
@@ -143,14 +143,37 @@ apertado na tela do celular. Se usar duas fatias iguais de "não ganhou nada",
 deixe uma longe da outra na lista — lado a lado elas viram um bloco só na
 roda (tem teste para isso).
 
-**Preço e giros** — `.env.local`:
+**Preço e desconto** — `.env.local`:
 
 ```env
-PLAY_PRICE_CENTS=300      # R$ 3,00
-SPINS_PER_PAYMENT=1       # giros por pagamento
+PLAY_PRICE_CENTS=300         # R$ 3,00 por giro, sem desconto
+SPINS_PER_PAYMENT=1          # onde a régua começa marcada
+MAX_SPINS_PER_PURCHASE=10    # teto da régua
+DISCOUNT_EVERY_SPINS=3       # a cada quantos giros o desconto sobe
+DISCOUNT_STEP_PERCENT=5      # quanto sobe por degrau
+MAX_DISCOUNT_PERCENT=20      # teto, para não virar giro de graça
 PIX_EXPIRATION_MINUTES=15
 PRIZE_VALIDITY_DAYS=30
 ```
+
+Com os valores acima, a régua fica assim:
+
+| Giros | Preço | Desconto | Por giro |
+| --- | --- | --- | --- |
+| 1 | R$ 3,00 | — | R$ 3,00 |
+| 3 | R$ 8,55 | 5% | R$ 2,85 |
+| 5 | R$ 14,25 | 5% | R$ 2,85 |
+| 6 | R$ 16,20 | 10% | R$ 2,70 |
+| 9 | R$ 22,95 | 15% | R$ 2,55 |
+| 10 | R$ 25,50 | 15% | R$ 2,55 |
+
+Mexer nesses números não exige conta na mão: `tests/pricing.test.ts` garante
+que pacote maior nunca sai mais barato no total nem pior por giro, que a conta
+fecha ao centavo e que o desconto respeita o teto.
+
+**O preço é sempre calculado no servidor.** O navegador manda só a quantidade
+de giros; se alguém enviar `amountCents` na requisição, o valor é ignorado —
+há teste para isso.
 
 **Logo do evento** — o arquivo em `public/brand/emapa.svg` é uma **recriação
 aproximada** feita para o app não ficar sem marca. Para usar a arte oficial:

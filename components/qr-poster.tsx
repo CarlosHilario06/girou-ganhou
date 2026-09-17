@@ -4,7 +4,6 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { asset, BASE_PATH } from "@/lib/asset";
-import { spinsLabel } from "@/lib/config";
 
 const EVENT_NAME = process.env.NEXT_PUBLIC_EVENT_NAME || "EMAPA 56 Anos";
 const EVENT_CITY = process.env.NEXT_PUBLIC_EVENT_CITY || "Avaré";
@@ -16,11 +15,13 @@ const EVENT_LOGO = asset(process.env.NEXT_PUBLIC_EVENT_LOGO || "/brand/emapa.svg
  * está sendo aberta.
  */
 export function QrPoster({
-  spins,
   priceLabel,
+  discountEvery,
+  discountStep,
 }: {
-  spins: number;
   priceLabel: string;
+  discountEvery: number;
+  discountStep: number;
 }) {
   const [poster, setPoster] = useState<{ url: string; qr: string } | null>(null);
 
@@ -52,7 +53,7 @@ export function QrPoster({
             GIROU, GANHOU!
           </p>
           <p className="mt-2 text-sm text-brand-100">
-            {spinsLabel(spins)} por {priceLabel} no Pix
+            Giros a partir de {priceLabel} no Pix
           </p>
         </div>
 
@@ -75,7 +76,8 @@ export function QrPoster({
             Aponte a câmera e gire a roleta
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            4 prêmios · entrega na hora, aqui no carro
+            {discountStep}% de desconto a cada {discountEvery} giros · prêmio na
+            hora, aqui no carro
           </p>
           <p className="mt-4 break-all border-t border-slate-200 pt-3 text-[10px] text-slate-400">
             {target}

@@ -7,6 +7,8 @@ export type Payment = {
   /** Id da cobrança no provedor externo (Mercado Pago, etc). */
   externalId?: string;
   amountCents: number;
+  /** Quantos giros este pagamento libera. */
+  spins: number;
   status: PaymentStatus;
   /** Pix copia e cola. */
   payload: string;
@@ -85,12 +87,11 @@ export type Store = {
   /** Marca como expirados os Pix vencidos, liberando nova tentativa. */
   expireStalePayments(playId?: string): Promise<void>;
   markPaymentExpired(paymentId: string): Promise<void>;
-  /** ATÔMICO: marca pago e credita os giros. false se já estava pago. */
-  creditPayment(
-    paymentId: string,
-    spins: number,
-    confirmedBy?: string,
-  ): Promise<boolean>;
+  /**
+   * ATÔMICO: marca pago e credita os giros do próprio pagamento.
+   * false se já estava pago.
+   */
+  creditPayment(paymentId: string, confirmedBy?: string): Promise<boolean>;
 
   /** ATÔMICO: desconta um giro. false quando não há saldo. */
   consumeSpin(playId: string): Promise<boolean>;

@@ -89,7 +89,7 @@ export function createMemoryStore(): Store {
       if (payment?.status === "pending") payment.status = "expired";
     },
 
-    async creditPayment(paymentId, spins, confirmedBy) {
+    async creditPayment(paymentId, confirmedBy) {
       const payment = findPayment(paymentId);
       if (!payment || payment.status !== "pending") return false;
 
@@ -98,7 +98,7 @@ export function createMemoryStore(): Store {
       if (confirmedBy) payment.confirmedBy = confirmedBy;
 
       const play = plays.get(payment.playId);
-      if (play) play.spinsAvailable += spins;
+      if (play) play.spinsAvailable += payment.spins;
       return true;
     },
 

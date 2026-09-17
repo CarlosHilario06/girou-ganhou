@@ -2,11 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Bungee, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider, themeBootstrapScript } from "@/components/theme";
 import {
+  DISCOUNT_EVERY_SPINS,
+  DISCOUNT_STEP_PERCENT,
   EVENT,
   PLAY_PRICE_CENTS,
-  SPINS_PER_PAYMENT,
   formatBRL,
-  spinsLabel,
 } from "@/lib/config";
 import { WINNING_PRIZES } from "@/lib/prizes";
 import "./globals.css";
@@ -27,9 +27,11 @@ const bungee = Bungee({
 
 // A descrição sai da configuração: preço, giros e prêmios mudam num lugar só,
 // e a prévia compartilhada não fica prometendo o que a roleta não dá.
-const chamada = `${formatBRL(PLAY_PRICE_CENTS)} no Pix, ${spinsLabel(
-  SPINS_PER_PAYMENT,
-)}, ${WINNING_PRIZES.length} prêmios.`;
+const chamada = `Giros a partir de ${formatBRL(
+  PLAY_PRICE_CENTS,
+)} no Pix, ${DISCOUNT_STEP_PERCENT}% de desconto a cada ${DISCOUNT_EVERY_SPINS} giros, ${
+  WINNING_PRIZES.length
+} prêmios.`;
 
 export const metadata: Metadata = {
   title: `Girou, Ganhou! · ${EVENT.name}`,

@@ -2,14 +2,15 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { spinsLabel } from "@/lib/config";
+import { formatBRL, spinsLabel } from "@/lib/config";
 import { gameApi, type Charge } from "@/lib/game-client";
+import { quoteFor } from "@/lib/pricing";
 import type { PublicPlay } from "@/lib/play-service";
 import { Button } from "./ui";
 
 type PaymentModalProps = {
+  /** Quantos giros o jogador escolheu na régua. */
   spins: number;
-  priceLabel: string;
   onClose: () => void;
   onPaid: (play: PublicPlay) => void;
 };
@@ -39,12 +40,7 @@ function useCountdown(expiresAt?: string): string {
   return left;
 }
 
-export function PaymentModal({
-  spins,
-  priceLabel,
-  onClose,
-  onPaid,
-}: PaymentModalProps) {
+export function PaymentModal({ spins, onClose, onPaid }: PaymentModalProps) {
   const [charge, setCharge] = useState<Charge | null>(null);
   const [status, setStatus] = useState<"loading" | "waiting" | "paid" | "error">(
     "loading",
@@ -56,13 +52,17 @@ export function PaymentModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const countdown = useCountdown(charge?.expiresAt);
 
+  // O preço aparece na hora, sem piscar "…": é a mesma conta que o servidor
+  // faz. Quando a cobrança chega, ela confirma o que já estava na tela.
+  const quote = charge?.quote ?? quoteFor(spins);
+
   // Cria (ou reaproveita) a cobrança assim que o popup abre.
   useEffect(() => {
     let active = true;
 
     (async () => {
       try {
-        const created = await gameApi.createPayment();
+        const created = await gameApi.createPayment(spins);
         if (!active) return;
         setCharge(created);
         setStatus("waiting");
@@ -80,7 +80,7 @@ export function PaymentModal({
     return () => {
       active = false;
     };
-  }, []);
+  }, [spins]);
 
   // Enquanto o popup está aberto, pergunta ao servidor se o Pix caiu.
   useEffect(() => {
@@ -172,7 +172,8 @@ export function PaymentModal({
               Pagamento confirmado!
             </h2>
             <p className="mt-2 text-sm text-ink-muted">
-              Liberamos <strong className="text-ink">{spinsLabel(spins)}</strong>{" "}
+              Liberamos{" "}
+              <strong className="text-ink">{spinsLabel(quote.spins)}</strong>{" "}
               na sua roleta. Boa sorte!
             </p>
           </div>
@@ -184,8 +185,14 @@ export function PaymentModal({
                   Pagamento via Pix
                 </p>
                 <h2 id="pix-title" className="font-display text-2xl text-ink">
-                  {priceLabel} por {spinsLabel(spins)}
+                  {formatBRL(quote.totalCents)} por {spinsLabel(quote.spins)}
                 </h2>
+                {quote.discountCents > 0 ? (
+                  <p className="mt-1 text-xs font-bold text-festa-green">
+                    {quote.discountPercent}% de desconto · você economiza{" "}
+                    {formatBRL(quote.discountCents)}
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"

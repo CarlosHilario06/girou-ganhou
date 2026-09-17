@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import QRCode from "qrcode";
-import { PIX_EXPIRATION_MINUTES, PLAY_PRICE_CENTS, EVENT } from "@/lib/config";
+import { PIX_EXPIRATION_MINUTES, EVENT } from "@/lib/config";
+import { quoteFor, type Quote } from "@/lib/pricing";
 import { getPaymentProvider } from "@/lib/payments";
 import { loadPlay, toPublicPlay } from "@/lib/play-service";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
   }
 
   const playId = await getPlayId();
+  // Quantos giros o jogador escolheu na régua. O preço é calculado AQUI:
+  // o navegador não manda valor, só quantidade.
+  const body = (await request.json().catch(() => ({}))) as { spins?: number };
+  const quote = quoteFor(Number(body.spins ?? 1));
+
   const play = playId ? await loadPlay(playId) : undefined;
   if (!play) {
     return NextResponse.json(
@@ -32,9 +38,10 @@ export async function POST(request: Request) {
   const store = getStore();
   const provider = getPaymentProvider();
 
-  // Se já existe um Pix válido, reaproveita em vez de gerar outro.
+  // Se já existe um Pix válido para o mesmo pacote, reaproveita em vez de
+  // gerar outro. Se o jogador mudou a régua, o antigo expira e vem um novo.
   const existing = await store.findPendingPayment(play.id);
-  if (existing) {
+  if (existing && existing.spins === quote.spins) {
     return NextResponse.json({
       payment: {
         id: existing.id,
@@ -44,6 +51,8 @@ export async function POST(request: Request) {
           width: 512,
         }),
         amountCents: existing.amountCents,
+        spins: existing.spins,
+        quote: quoteFor(existing.spins),
         expiresAt: existing.expiresAt,
         manualConfirmation: provider.manualConfirmation,
       },
@@ -51,13 +60,15 @@ export async function POST(request: Request) {
     });
   }
 
+  if (existing) await store.markPaymentExpired(existing.id);
+
   const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000);
 
   try {
     const charge = await provider.createCharge({
       play,
-      amountCents: PLAY_PRICE_CENTS,
-      description: `Roleta ${EVENT.name}`,
+      amountCents: quote.totalCents,
+      description: `Roleta ${EVENT.name} · ${quote.spins}x`,
       expiresAt,
     });
 
@@ -66,7 +77,8 @@ export async function POST(request: Request) {
       playId: play.id,
       provider: provider.id,
       externalId: charge.externalId,
-      amountCents: PLAY_PRICE_CENTS,
+      amountCents: quote.totalCents,
+      spins: quote.spins,
       status: "pending" as const,
       payload: charge.payload,
       createdAt: new Date().toISOString(),
@@ -85,6 +97,8 @@ export async function POST(request: Request) {
           width: 512,
         }),
         amountCents: payment.amountCents,
+        spins: payment.spins,
+        quote: quote satisfies Quote,
         expiresAt: payment.expiresAt,
         manualConfirmation: provider.manualConfirmation,
       },

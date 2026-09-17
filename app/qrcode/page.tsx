@@ -1,5 +1,10 @@
 import { QrPoster } from "@/components/qr-poster";
-import { PLAY_PRICE_CENTS, SPINS_PER_PAYMENT, formatBRL } from "@/lib/config";
+import {
+  DISCOUNT_EVERY_SPINS,
+  DISCOUNT_STEP_PERCENT,
+  PLAY_PRICE_CENTS,
+  formatBRL,
+} from "@/lib/config";
 
 export const metadata = {
   title: "Cartaz do QR Code · Girou, Ganhou!",
@@ -13,8 +18,9 @@ export const metadata = {
 export default function QrCodePage() {
   return (
     <QrPoster
-      spins={SPINS_PER_PAYMENT}
       priceLabel={formatBRL(PLAY_PRICE_CENTS)}
+      discountEvery={DISCOUNT_EVERY_SPINS}
+      discountStep={DISCOUNT_STEP_PERCENT}
     />
   );
 }

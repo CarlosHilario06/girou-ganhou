@@ -23,8 +23,28 @@ export const DRIVER = {
 /** Preço de uma jogada, em centavos. R$ 3,00 por padrão. */
 export const PLAY_PRICE_CENTS = Number(process.env.PLAY_PRICE_CENTS || 300);
 
-/** Quantos giros o pagamento libera. */
+/** Quantos giros vêm marcados na régua quando a tela abre. */
 export const SPINS_PER_PAYMENT = Number(process.env.SPINS_PER_PAYMENT || 1);
+
+/** Teto da régua: ninguém compra mais giros que isso de uma vez. */
+export const MAX_SPINS_PER_PURCHASE = Number(
+  process.env.MAX_SPINS_PER_PURCHASE || 10,
+);
+
+/** A cada quantos giros o desconto sobe um degrau. */
+export const DISCOUNT_EVERY_SPINS = Number(
+  process.env.DISCOUNT_EVERY_SPINS || 3,
+);
+
+/** Quanto o desconto sobe a cada degrau, em pontos percentuais. */
+export const DISCOUNT_STEP_PERCENT = Number(
+  process.env.DISCOUNT_STEP_PERCENT || 5,
+);
+
+/** Teto do desconto, para a promoção não virar giro de graça. */
+export const MAX_DISCOUNT_PERCENT = Number(
+  process.env.MAX_DISCOUNT_PERCENT || 20,
+);
 
 /** Minutos de validade do QR Code Pix antes de expirar. */
 export const PIX_EXPIRATION_MINUTES = Number(

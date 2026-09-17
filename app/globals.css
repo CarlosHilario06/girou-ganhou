@@ -298,3 +298,50 @@ html.theme-switching::view-transition-new(root) {
     animation: none;
   }
 }
+
+/* ----------------------- Régua de quantidade de giros --------------------- */
+.spins-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--gold) 100%
+  );
+  outline-offset: 4px;
+}
+
+.spins-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: var(--gold);
+  border: 3px solid var(--surface);
+  box-shadow: 0 2px 8px rgba(4, 15, 40, 0.35);
+  cursor: grab;
+  transition: transform 0.15s ease;
+}
+
+.spins-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.12);
+}
+
+.spins-range::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: var(--gold);
+  border: 3px solid var(--surface);
+  box-shadow: 0 2px 8px rgba(4, 15, 40, 0.35);
+  cursor: grab;
+}
+
+.spins-range:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

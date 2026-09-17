@@ -3,6 +3,7 @@
 import QRCode from "qrcode";
 import type { PublicPlay } from "@/lib/play-service";
 import { buildPixPayload } from "@/lib/pix";
+import { quoteFor, type Quote } from "@/lib/pricing";
 import { drawPrize, getPrize, PRIZES } from "@/lib/prizes";
 
 /**
@@ -21,6 +22,8 @@ export type Charge = {
   payload: string;
   qrCode: string;
   amountCents: number;
+  /** A conta do pacote: quantidade, desconto e total. */
+  quote: Quote;
   expiresAt: string;
   manualConfirmation: boolean;
   /** true quando é o próprio jogador que declara ter pago (modo estático). */
@@ -52,7 +55,7 @@ export type GameApi = {
   load(): Promise<PublicPlay | null>;
   reset(): Promise<void>;
   register(data: { name: string; phone: string }): Promise<PublicPlay>;
-  createPayment(): Promise<Charge>;
+  createPayment(spins: number): Promise<Charge>;
   paymentStatus(id: string): Promise<{ status: string; play: PublicPlay }>;
   /** Só no modo estático: o jogador confirma que pagou. */
   confirmPayment(id: string): Promise<{ status: string; play: PublicPlay }>;
@@ -95,8 +98,12 @@ const serverApi: GameApi = {
     return data.play;
   },
 
-  async createPayment() {
-    const response = await fetch("/api/payments", { method: "POST" });
+  async createPayment(spins: number) {
+    const response = await fetch("/api/payments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spins }),
+    });
     const data = await parse(response);
     return { ...data.payment, selfConfirm: false };
   },
@@ -136,9 +143,9 @@ type StaticState = {
   results: PublicPlay["results"];
   pendingPaymentId?: string;
   pendingExpiresAt?: string;
+  pendingSpins?: number;
 };
 
-const PRICE_CENTS = Number(process.env.NEXT_PUBLIC_PLAY_PRICE_CENTS || 300);
 const SPINS = Number(process.env.NEXT_PUBLIC_SPINS_PER_PAYMENT || 1);
 
 function readState(): StaticState | null {
@@ -217,8 +224,9 @@ const staticApi: GameApi = {
     return toPublic(state);
   },
 
-  async createPayment() {
+  async createPayment(spins: number) {
     const state = requireState();
+    const quote = quoteFor(spins);
     const id = `demo_${Date.now()}`;
     const expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
 
@@ -226,17 +234,23 @@ const staticApi: GameApi = {
       key: process.env.NEXT_PUBLIC_PIX_KEY || "demo@girouganhou.app",
       merchantName: process.env.NEXT_PUBLIC_PIX_MERCHANT_NAME || "GIROU GANHOU",
       merchantCity: process.env.NEXT_PUBLIC_PIX_MERCHANT_CITY || "AVARE",
-      amountCents: PRICE_CENTS,
+      amountCents: quote.totalCents,
       description: "Roleta Girou Ganhou",
     });
 
-    writeState({ ...state, pendingPaymentId: id, pendingExpiresAt: expiresAt });
+    writeState({
+      ...state,
+      pendingPaymentId: id,
+      pendingExpiresAt: expiresAt,
+      pendingSpins: quote.spins,
+    });
 
     return {
       id,
       payload,
       qrCode: await QRCode.toDataURL(payload, { margin: 1, width: 512 }),
-      amountCents: PRICE_CENTS,
+      amountCents: quote.totalCents,
+      quote,
       expiresAt,
       manualConfirmation: true,
       selfConfirm: true,
@@ -256,9 +270,10 @@ const staticApi: GameApi = {
     const state = requireState();
     const next: StaticState = {
       ...state,
-      spinsAvailable: state.spinsAvailable + SPINS,
+      spinsAvailable: state.spinsAvailable + (state.pendingSpins ?? SPINS),
       pendingPaymentId: undefined,
       pendingExpiresAt: undefined,
+      pendingSpins: undefined,
     };
     writeState(next);
     return { status: "paid", play: toPublic(next) };

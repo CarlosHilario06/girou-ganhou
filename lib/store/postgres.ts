@@ -40,6 +40,7 @@ create table if not exists payments (
   provider text not null,
   external_id text,
   amount_cents integer not null,
+  spins integer not null default 1,
   status text not null,
   payload text not null,
   created_at timestamptz not null default now(),
@@ -47,6 +48,9 @@ create table if not exists payments (
   paid_at timestamptz,
   confirmed_by text
 );
+
+-- Para bancos criados antes da régua de giros existir.
+alter table payments add column if not exists spins integer not null default 1;
 
 create index if not exists payments_external_id_idx on payments (external_id);
 create index if not exists payments_play_idx on payments (play_id, status);
@@ -81,6 +85,7 @@ type PaymentRow = {
   provider: string;
   external_id: string | null;
   amount_cents: number;
+  spins: number;
   status: string;
   payload: string;
   created_at: unknown;
@@ -96,6 +101,7 @@ function toPayment(row: PaymentRow): Payment {
     provider: row.provider,
     externalId: row.external_id ?? undefined,
     amountCents: Number(row.amount_cents),
+    spins: Number(row.spins),
     status: row.status as Payment["status"],
     payload: row.payload,
     createdAt: iso(row.created_at),
@@ -209,14 +215,15 @@ export function createPostgresStore(sql: SqlRunner): Store & {
     async addPayment(payment) {
       await sql.query(
         `insert into payments
-           (id, play_id, provider, external_id, amount_cents, status, payload, created_at, expires_at)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+           (id, play_id, provider, external_id, amount_cents, spins, status, payload, created_at, expires_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           payment.id,
           payment.playId,
           payment.provider,
           payment.externalId ?? null,
           payment.amountCents,
+          payment.spins,
           payment.status,
           payment.payload,
           payment.createdAt,
@@ -268,7 +275,7 @@ export function createPostgresStore(sql: SqlRunner): Store & {
       );
     },
 
-    async creditPayment(paymentId, spins, confirmedBy) {
+    async creditPayment(paymentId, confirmedBy) {
       // Tudo numa instrução só, e uma instrução no Postgres já é atômica.
       // Só a transição pending -> paid credita: webhook, consulta de status e
       // confirmação manual podem chegar juntos que o primeiro pega a linha e
@@ -282,14 +289,15 @@ export function createPostgresStore(sql: SqlRunner): Store & {
            update payments
            set status = 'paid', paid_at = now(), confirmed_by = $2
            where id = $1 and status = 'pending'
-           returning play_id
+           returning play_id, spins
          ), creditado as (
-           update plays set spins_available = spins_available + $3
+           update plays
+           set spins_available = spins_available + (select spins from pago)
            where id = (select play_id from pago)
            returning id
          )
          select id from creditado`,
-        [paymentId, confirmedBy ?? null, spins],
+        [paymentId, confirmedBy ?? null],
       );
       return rows.length > 0;
     },

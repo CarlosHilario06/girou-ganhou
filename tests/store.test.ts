@@ -24,6 +24,7 @@ function pagamento(overrides: Partial<Payment> = {}): Payment {
     provider: "mercadopago",
     externalId: `ext_${Math.random().toString(36).slice(2, 10)}`,
     amountCents: 300,
+    spins: 2,
     status: "pending",
     payload: "000201pix",
     createdAt: new Date().toISOString(),
@@ -50,12 +51,12 @@ for (const { nome, criar } of FABRICAS) {
     const pay = pagamento({ playId: play.id });
     await store.addPayment(pay);
 
-    assert.equal(await store.creditPayment(pay.id, 2), true);
+    assert.equal(await store.creditPayment(pay.id), true);
     assert.equal((await store.getPlay(play.id))?.spinsAvailable, 2);
 
     // Webhook e consulta de status chegando depois, no mesmo pagamento.
-    assert.equal(await store.creditPayment(pay.id, 2), false);
-    assert.equal(await store.creditPayment(pay.id, 2, "motorista"), false);
+    assert.equal(await store.creditPayment(pay.id), false);
+    assert.equal(await store.creditPayment(pay.id, "motorista"), false);
     assert.equal((await store.getPlay(play.id))?.spinsAvailable, 2);
 
     const salvo = await store.getPayment(pay.id);
@@ -71,7 +72,7 @@ for (const { nome, criar } of FABRICAS) {
 
     // Cinco confirmações ao mesmo tempo: uma vence, quatro voltam de mãos vazias.
     const resultados = await Promise.all(
-      Array.from({ length: 5 }, () => store.creditPayment(pay.id, 2)),
+      Array.from({ length: 5 }, () => store.creditPayment(pay.id)),
     );
 
     assert.equal(resultados.filter(Boolean).length, 1, "só um crédito pode valer");
@@ -83,7 +84,7 @@ for (const { nome, criar } of FABRICAS) {
     const play = await store.createPlay({ name: "Carlos", phone: "14966665555" });
     const pay = pagamento({ playId: play.id });
     await store.addPayment(pay);
-    await store.creditPayment(pay.id, 2);
+    await store.creditPayment(pay.id);
 
     // Dez cliques ao mesmo tempo no botão de girar.
     const giros = await Promise.all(
@@ -159,7 +160,7 @@ for (const { nome, criar } of FABRICAS) {
     assert.equal((await store.getPayment(vencido.id))?.status, "expired");
 
     // E o vencido não pode mais creditar giro nenhum.
-    assert.equal(await store.creditPayment(vencido.id, 2), false);
+    assert.equal(await store.creditPayment(vencido.id), false);
     assert.equal((await store.getPlay(play.id))?.spinsAvailable, 0);
   });
 
@@ -190,7 +191,7 @@ for (const { nome, criar } of FABRICAS) {
     const um = await store.createPlay({ name: "Cliente 1", phone: "14900000001" });
     const pay1 = pagamento({ playId: um.id });
     await store.addPayment(pay1);
-    await store.creditPayment(pay1.id, 2);
+    await store.creditPayment(pay1.id);
     await store.addSpin({
       id: "s1", playId: um.id, prizeId: "cookie", code: "AAA-111",
       createdAt: new Date().toISOString(),
@@ -200,7 +201,7 @@ for (const { nome, criar } of FABRICAS) {
     const dois = await store.createPlay({ name: "Cliente 2", phone: "14900000002" });
     const pay2 = pagamento({ playId: dois.id });
     await store.addPayment(pay2);
-    await store.creditPayment(pay2.id, 2);
+    await store.creditPayment(pay2.id);
     await store.addSpin({
       id: "s2", playId: dois.id, prizeId: "pirulito", code: "BBB-222",
       createdAt: new Date().toISOString(),
@@ -223,5 +224,34 @@ for (const { nome, criar } of FABRICAS) {
     const premios = await store.listRecentPrizes();
     assert.equal(premios.length, 2);
     assert.ok(premios.every((p) => p.winner.startsWith("Cliente")));
+  });
+}
+
+/* ------------------ pacotes de giros comprados de uma vez ----------------- */
+
+for (const { nome, criar } of FABRICAS) {
+  test(`[${nome}] o pagamento credita a quantidade de giros que ele comprou`, async () => {
+    const store = await criar();
+    const play = await store.createPlay({ name: "Pacote", phone: "14900001111" });
+    const pay = pagamento({ playId: play.id, spins: 5, amountCents: 1425 });
+    await store.addPayment(pay);
+
+    assert.equal(await store.creditPayment(pay.id), true);
+    assert.equal((await store.getPlay(play.id))?.spinsAvailable, 5);
+    assert.equal((await store.getStats()).revenueCents, 1425);
+  });
+
+  test(`[${nome}] pacotes diferentes somam sem se confundir`, async () => {
+    const store = await criar();
+    const play = await store.createPlay({ name: "Dois pacotes", phone: "14900002222" });
+    const um = pagamento({ playId: play.id, spins: 1, amountCents: 300 });
+    const dez = pagamento({ playId: play.id, spins: 10, amountCents: 2550 });
+    await store.addPayment(um);
+    await store.addPayment(dez);
+
+    await store.creditPayment(um.id);
+    await store.creditPayment(dez.id);
+    assert.equal((await store.getPlay(play.id))?.spinsAvailable, 11);
+    assert.equal((await store.getStats()).revenueCents, 2850);
   });
 }

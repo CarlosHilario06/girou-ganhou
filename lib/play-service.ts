@@ -1,4 +1,3 @@
-import { SPINS_PER_PAYMENT } from "@/lib/config";
 import { getPrize } from "@/lib/prizes";
 import { getStore, type Play } from "@/lib/store";
 
@@ -76,10 +75,6 @@ export async function creditAndReload(
   confirmedBy?: string,
 ): Promise<{ credited: boolean; play: Play | undefined }> {
   const store = getStore();
-  const credited = await store.creditPayment(
-    paymentId,
-    SPINS_PER_PAYMENT,
-    confirmedBy,
-  );
+  const credited = await store.creditPayment(paymentId, confirmedBy);
   return { credited, play: await store.getPlay(playId) };
 }

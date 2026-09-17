@@ -46,6 +46,7 @@ function payment(overrides: Partial<Payment> = {}): Payment {
     provider: "mercadopago",
     externalId: "123456",
     amountCents: 300,
+    spins: 1,
     status: "pending",
     payload: "000201...",
     createdAt: new Date().toISOString(),
