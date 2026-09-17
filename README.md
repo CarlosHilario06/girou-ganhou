@@ -97,9 +97,8 @@ O passageiro paga → o Pix aparece em **/motorista → "Pix aguardando
 confirmação"** → o motorista confere no app do banco e toca em *Liberar
 giros*. A tela do passageiro destrava sozinha em segundos.
 
-### `mercadopago`
-Confirmação automática, sem o motorista precisar olhar o banco (cobra a taxa
-do Mercado Pago):
+### `mercadopago` — o recomendado para a festa
+Confirmação automática, sem o motorista precisar olhar o app do banco:
 
 ```env
 PAYMENT_PROVIDER=mercadopago
@@ -107,8 +106,20 @@ MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
 MERCADOPAGO_WEBHOOK_URL=https://seu-dominio.com/api/payments/webhook
 ```
 
+O Access Token de produção está em **mercadopago.com.br → Seu negócio → 
+Configurações → Gestão e administração → Credenciais → Credenciais de
+produção**. Dali só o *Access Token* é usado; Public Key, Client ID e Client
+Secret não entram neste app.
+
 A confirmação chega por dois caminhos — webhook e consulta periódica — e o que
-chegar primeiro libera os giros.
+chegar primeiro libera os giros. Cadastre a URL do webhook no painel do
+Mercado Pago (Suas integrações → sua aplicação → Webhooks), no evento
+**Pagamentos**.
+
+> **O webhook não acredita no que recebe.** Ele pega só o id da notificação e
+> pergunta ao Mercado Pago qual é o status real. Um POST forjado dizendo
+> `"status": "approved"` não libera giro nenhum — isso é testado em
+> `tests/payments.test.ts`.
 
 > Para plugar outro provedor (Efí, Asaas, PagBank), crie um arquivo em
 > `lib/payments/` seguindo o tipo `PaymentProvider` e registre em
@@ -186,6 +197,43 @@ ou uma VPS. Aí o sorteio acontece no servidor e o Pix é conferido de verdade.
 Para o QR do Pages cobrar na sua chave, defina as *variables* do repositório
 em **Settings → Secrets and variables → Actions → Variables**: `PIX_KEY`,
 `PIX_MERCHANT_NAME` e `PIX_MERCHANT_CITY`.
+
+## Subindo para valer (Vercel)
+
+O caminho mais curto para a festa:
+
+1. Faça login em [vercel.com](https://vercel.com) com a conta do GitHub e
+   importe este repositório.
+2. Em **Settings → Environment Variables**, cadastre (marcando *Production*):
+
+   | Variável | Valor |
+   | --- | --- |
+   | `APP_SECRET` | resultado de `openssl rand -base64 32` |
+   | `DRIVER_PIN` | um PIN só seu, nada de `1234` |
+   | `PAYMENT_PROVIDER` | `mercadopago` |
+   | `MERCADOPAGO_ACCESS_TOKEN` | o Access Token de produção |
+   | `MERCADOPAGO_WEBHOOK_URL` | `https://<seu-app>.vercel.app/api/payments/webhook` |
+   | `NEXT_PUBLIC_APP_URL` | `https://<seu-app>.vercel.app` |
+
+3. Faça o deploy, abra `/qrcode`, imprima e cole no encosto.
+
+> **Atenção ao armazenamento.** Na Vercel o disco é descartável, então
+> `STORAGE_DRIVER=file` não serve: os prêmios sumiriam a cada reinício. Para a
+> festa, ou use uma hospedagem com disco (Railway, Render, VPS) com
+> `STORAGE_DRIVER=file`, ou troque `load`/`persist` em `lib/store.ts` por um
+> banco. O Vercel Postgres e o Supabase têm plano grátis que dá conta de
+> sobra para uma noite de festa.
+
+## Segredos: onde eles nunca podem estar
+
+Access Token, `APP_SECRET` e PIN **nunca** entram no repositório. Eles vivem
+só no `.env.local` da sua máquina (ignorado pelo git) e nas variáveis de
+ambiente da hospedagem.
+
+Se um token escapar — foi colado num chat, num print, num grupo de WhatsApp —
+entre no painel do Mercado Pago e clique em **renovar credenciais**. Isso
+invalida o token antigo na hora. Renovar é grátis e leva segundos; um token de
+produção vazado dá acesso à movimentação da conta.
 
 ## Onde os dados ficam
 

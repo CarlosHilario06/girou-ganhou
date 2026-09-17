@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPaymentProvider } from "@/lib/payments";
 import { creditPayment } from "@/lib/play-service";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { findPayment } from "@/lib/store";
 
 /**
@@ -11,6 +12,16 @@ import { findPayment } from "@/lib/store";
  * provedor qual é o status real.
  */
 export async function POST(request: Request) {
+  // Cada webhook vira uma consulta à API do provedor. Sem limite, qualquer um
+  // poderia usar esta rota para queimar a cota da conta do motorista.
+  const limit = rateLimit(clientKey(request, "webhook"), {
+    limit: 120,
+    windowMs: 60_000,
+  });
+  if (!limit.ok) {
+    return NextResponse.json({ received: false }, { status: 429 });
+  }
+
   const body = (await request.json().catch(() => ({}))) as {
     data?: { id?: string | number };
     id?: string | number;

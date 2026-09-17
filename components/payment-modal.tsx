@@ -236,7 +236,7 @@ export function PaymentModal({
                     </span>
                   )}
                   {charge.selfConfirm
-                    ? "Pague e toque no botão abaixo"
+                    ? "Demonstração: nada é cobrado de verdade"
                     : charge.manualConfirmation
                       ? "Aguardando o motorista confirmar o recebimento"
                       : "Aguardando o pagamento cair"}
@@ -260,7 +260,7 @@ export function PaymentModal({
                     }}
                     className="w-full"
                   >
-                    Já paguei — liberar meus giros
+                    Simular pagamento (demonstração)
                   </Button>
                 ) : null}
 
