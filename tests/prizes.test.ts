@@ -33,24 +33,37 @@ test("as chances combinadas são as que o motorista pediu", () => {
   const chance = (id: string) =>
     ((PRIZES.find((p) => p.id === id)?.weight ?? 0) / total) * 100;
 
-  assert.equal(chance("ingresso-parque"), 1, "ingresso do parque: 1%");
   assert.equal(chance("corrida-gratis"), 1, "não paga a corrida: 1%");
-  assert.ok(chance("dez-reais") <= 5, `R$ 10 tem de ser raro, veio ${chance("dez-reais")}%`);
-  assert.ok(chance("pacoca") > chance("dez-reais"), "a paçoca é o prêmio de consolo");
+  assert.ok(chance("ingresso-parque") < 1, "ingresso do parque é mais raro que 1%");
+  assert.ok(chance("trinta-reais") < 1, "R$ 30 é o mais raro de todos");
+  assert.ok(
+    chance("trinta-reais") < chance("ingresso-parque"),
+    "o R$ 30 é a vitrine: o mais difícil da roda",
+  );
+  assert.ok(chance("pacoca") > 10, "a paçoca é o prêmio que sai de verdade");
 });
 
-test("ingresso e corrida grátis são os mais difíceis", () => {
-  const dificeis = ["ingresso-parque", "corrida-gratis"];
-  const maiorDificil = Math.max(
-    ...PRIZES.filter((p) => dificeis.includes(p.id)).map((p) => p.weight),
-  );
-  const menorFacil = Math.min(
-    ...PRIZES.filter((p) => !dificeis.includes(p.id)).map((p) => p.weight),
-  );
-  assert.ok(
-    maiorDificil < menorFacil,
-    "os prêmios grandes têm que ser mais raros que qualquer outra fatia",
-  );
+test("nenhuma fatia desenhada na roleta é impossível de ganhar", () => {
+  // Prêmio que o passageiro vê na roda e não tem como sair é propaganda
+  // enganosa. Uma chance pequena é decisão de negócio; zero é outra coisa.
+  for (const prize of PRIZES) {
+    assert.ok(
+      prize.weight > 0,
+      `${prize.id} está na roleta com peso 0 — nunca poderia ser sorteado`,
+    );
+  }
+});
+
+test("os prêmios caros são mais raros que a paçoca", () => {
+  const peso = (id: string) => PRIZES.find((p) => p.id === id)?.weight ?? 0;
+  const pacoca = peso("pacoca");
+
+  for (const id of ["corrida-gratis", "ingresso-parque", "trinta-reais"]) {
+    assert.ok(
+      peso(id) < pacoca,
+      `${id} não pode sair mais que a paçoca — é o prêmio que custa caro`,
+    );
+  }
 });
 
 test("sorteio respeita os pesos configurados", () => {

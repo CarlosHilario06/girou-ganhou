@@ -7,16 +7,20 @@ dentro do carro.
 
 ### Os prêmios e a chance de cada um
 
-| Fatia | Chance |
-| --- | --- |
-| 😅 Não foi dessa vez (duas fatias, uma de cada lado da roda) | 70% |
-| 🥜 1 paçoca | 25% |
-| 💵 R$ 10,00 em dinheiro | 3% |
-| 🎟️ 3 ingressos do parque | 1% |
-| 🚗 Não paga a corrida | 1% |
+| Fatia | Chance | Sai a cada |
+| --- | --- | --- |
+| 😅 Não foi dessa vez (duas fatias, uma de cada lado da roda) | 73,5% | — |
+| 🥜 1 paçoca | 25% | ~4 giros |
+| 🚗 Não paga a corrida | 1% | ~100 giros |
+| 🎟️ 3 ingressos do parque | 0,3% | ~333 giros |
+| 💸 R$ 30,00 no Pix | 0,2% | ~500 giros |
 
 Os pesos em `lib/prizes.ts` somam 1000, então **cada 10 pontos valem 1%** — dá
 para mexer sem calcular nada.
+
+> **Nenhuma fatia pode ter peso 0.** Prêmio que o passageiro vê na roda e não
+> tem como sair é propaganda enganosa (CDC art. 37). Prêmio de vitrine existe:
+> é só usar o menor peso possível, não zero. Há um teste que barra isso.
 
 Feito para a **EMAPA 56 Anos (Avaré, 2026)**, com tema claro e escuro e as
 cores da festa (azul escuro, dourado e verde).

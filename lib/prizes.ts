@@ -4,11 +4,15 @@
  * `weight` é o peso do sorteio. Os pesos somam 1000, então cada 10 pontos
  * valem 1% — fica fácil mexer sem calcular nada:
  *
- *   😅 Não foi dessa vez ....... 70%  (duas fatias, uma em cada lado da roda)
+ *   😅 Não foi dessa vez ..... 73,5%  (duas fatias, uma em cada lado da roda)
  *   🥜 1 paçoca ................ 25%
- *   💵 R$ 10,00 ................. 3%
- *   🎟️ 3 ingressos do parque .... 1%
  *   🚗 Não paga a corrida ........ 1%
+ *   🎟️ 3 ingressos do parque .. 0,3%   (1 a cada ~333 giros)
+ *   💸 R$ 30,00 no Pix ........ 0,2%   (1 a cada ~500 giros)
+ *
+ * Nenhuma fatia desenhada na roleta pode ter peso 0: prêmio que o passageiro
+ * vê e não tem como sair é propaganda enganosa (CDC art. 37). Para um prêmio
+ * "de vitrine", use o menor peso possível — não zero.
  *
  * `win: false` marca a fatia que não dá prêmio: não gera código, não aparece
  * no painel do motorista e não entra no letreiro de ganhadores.
@@ -57,7 +61,7 @@ export const PRIZES: Prize[] = [
     fill: "#7A8AA6",
     fillDark: "#41537A",
     ink: "#FFFFFF",
-    weight: 350,
+    weight: 368,
     win: false,
   },
   {
@@ -71,21 +75,21 @@ export const PRIZES: Prize[] = [
     fill: "#16A64F",
     fillDark: "#12873F",
     ink: "#FFFFFF",
-    weight: 10,
+    weight: 3,
     win: true,
   },
   {
-    id: "dez-reais",
-    label: "R$ 10",
-    sublabel: "NA MÃO",
-    title: "R$ 10,00 em dinheiro",
+    id: "trinta-reais",
+    label: "R$ 30",
+    sublabel: "NO PIX",
+    title: "R$ 30,00 no Pix",
     description:
-      "Dez reais na mão, agora. Mostre este código para o motorista antes de descer.",
-    emoji: "💵",
+      "Trinta reais no Pix, na hora. Mostre este código para o motorista antes de descer.",
+    emoji: "💸",
     fill: "#1E63D8",
     fillDark: "#1750B4",
     ink: "#FFFFFF",
-    weight: 30,
+    weight: 2,
     win: true,
   },
   {
@@ -98,7 +102,7 @@ export const PRIZES: Prize[] = [
     fill: "#7A8AA6",
     fillDark: "#41537A",
     ink: "#FFFFFF",
-    weight: 350,
+    weight: 367,
     win: false,
   },
   {
