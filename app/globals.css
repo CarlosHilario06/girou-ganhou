@@ -1,0 +1,275 @@
+@import "tailwindcss";
+
+/* Tema por classe no <html>, não por preferência do sistema:
+   o botão de troca precisa mandar mais que o SO. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* ---- Identidade da festa: azul escuro, dourado e verde da logo ---- */
+  --brand-50: #eef4ff;
+  --brand-100: #d9e6ff;
+  --brand-200: #b7d0ff;
+  --brand-300: #85b0ff;
+  --brand-400: #4c8dff;
+  --brand-500: #1e63d8;
+  --brand-600: #1750b4;
+  --brand-700: #123e8c;
+  --brand-800: #0b2a63;
+  --brand-900: #071c44;
+  --brand-950: #040f28;
+
+  --gold: #f4b324;
+  --gold-soft: #ffd469;
+  --green: #16a64f;
+  --green-soft: #3ecb77;
+
+  /* ---- Superfícies do tema claro ---- */
+  --bg: #eaf1fd;
+  --bg-glow: rgba(30, 99, 216, 0.18);
+  --surface: #ffffff;
+  --surface-2: #f3f7ff;
+  --surface-3: #e7eefc;
+  --border: #d3e0f7;
+  --border-strong: #b9cdf0;
+  --text: #07142f;
+  --text-muted: #4b6087;
+  --accent: var(--brand-500);
+  --accent-contrast: #ffffff;
+  --ring: rgba(30, 99, 216, 0.35);
+  --shadow-color: 215 45% 35%;
+}
+
+.dark {
+  --bg: #04091a;
+  --bg-glow: rgba(76, 141, 255, 0.22);
+  --surface: #0a1630;
+  --surface-2: #0e1e3e;
+  --surface-3: #142a52;
+  --border: #1d3260;
+  --border-strong: #2a457c;
+  --text: #e8effd;
+  --text-muted: #93a8cd;
+  --accent: var(--brand-400);
+  --accent-contrast: #04091a;
+  --ring: rgba(76, 141, 255, 0.45);
+  --shadow-color: 220 70% 3%;
+}
+
+@theme inline {
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-festa-green: var(--green);
+  --color-festa-green-soft: var(--green-soft);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-ink-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bungee), var(--font-jakarta), ui-sans-serif, sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Brilho de fundo que dá o ar de produto SaaS sem pesar no celular. */
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  width: 65vmax;
+  height: 65vmax;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.55;
+  pointer-events: none;
+  transition: background 0.6s ease, opacity 0.6s ease;
+}
+
+.aurora::before {
+  top: -25vmax;
+  right: -20vmax;
+  background: radial-gradient(circle, var(--bg-glow), transparent 68%);
+}
+
+.aurora::after {
+  bottom: -30vmax;
+  left: -22vmax;
+  background: radial-gradient(
+    circle,
+    rgba(244, 179, 36, 0.16),
+    transparent 68%
+  );
+}
+
+/* ---------------------------- Trocador de tema ---------------------------- */
+/* Revelação circular a partir do botão. Onde View Transitions não existe
+   (Firefox e Safari antigo), a troca acontece direto — sem quebrar nada. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--theme-radius, 150%) at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+html.theme-switching::view-transition-new(root) {
+  animation: theme-reveal 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-switching::view-transition-new(root) {
+    animation-duration: 1ms;
+  }
+}
+
+/* ------------------------------- Animações ------------------------------- */
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--ring);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -180% 0;
+  }
+  to {
+    background-position: 180% 0;
+  }
+}
+
+@keyframes ticker-hit {
+  0% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(-26deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+.ticker-hit {
+  animation: ticker-hit 0.16s ease-out;
+}
+
+.shimmer {
+  background-image: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-up,
+  .animate-pop-in,
+  .animate-pulse-ring,
+  .shimmer {
+    animation: none;
+  }
+}
+
+/* Foco visível e consistente em tudo que é interativo. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}

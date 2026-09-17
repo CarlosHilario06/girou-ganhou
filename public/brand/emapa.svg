@@ -1,0 +1,43 @@
+<!--
+  Recriação aproximada da logo da EMAPA para o app não ficar sem marca.
+  Para usar a arte oficial: coloque o arquivo em /public/brand/ e aponte
+  NEXT_PUBLIC_EVENT_LOGO para ele (ex.: /brand/emapa-oficial.png).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="EMAPA 56 anos - 2026">
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b4fa8"/>
+      <stop offset="100%" stop-color="#062a63"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2cc169"/>
+      <stop offset="100%" stop-color="#0f8a3f"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd76b"/>
+      <stop offset="55%" stop-color="#f4b324"/>
+      <stop offset="100%" stop-color="#d98f0c"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="120" cy="108" r="96" fill="#0b8a42"/>
+  <circle cx="120" cy="108" r="88" fill="url(#gold)"/>
+  <circle cx="120" cy="108" r="80" fill="url(#badge)"/>
+  <circle cx="120" cy="108" r="80" fill="none" stroke="#04173a" stroke-opacity="0.45" stroke-width="2"/>
+
+  <!-- Silhueta de cavaleiro, marca da tradição rodeio/agro do evento -->
+  <g fill="#f4b324" transform="translate(120 66) scale(1.05)">
+    <path d="M-26 8c4-6 9-11 15-14l6-9 7 2-3 7c5-1 10 0 15 3l9-6 4 5-8 6c3 4 5 9 5 14l-6 1c-1-5-3-9-6-12l-9 7 3 9-6 2-4-10-10 2-5 9-6-3 5-9c-4-2-7-5-9-9z"/>
+    <path d="M-30 14h60v4h-60z" opacity="0.9"/>
+  </g>
+
+  <text x="120" y="140" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="46" letter-spacing="2" fill="url(#gold)" stroke="#04173a" stroke-width="2" paint-order="stroke">EMAPA</text>
+
+  <!-- Faixa verde -->
+  <path d="M18 156h204l-16 22H34z" fill="url(#ribbon)"/>
+  <path d="M18 156l-12 26 28-4z" fill="#0a6c32"/>
+  <path d="M222 156l12 26-28-4z" fill="#0a6c32"/>
+  <text x="120" y="173" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="16" letter-spacing="3" fill="#ffffff">56 ANOS</text>
+
+  <text x="120" y="202" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="22" letter-spacing="4" fill="url(#gold)">2026</text>
+</svg>
