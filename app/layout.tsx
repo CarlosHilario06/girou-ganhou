@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { Bungee, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider, themeBootstrapScript } from "@/components/theme";
-import { EVENT } from "@/lib/config";
+import {
+  EVENT,
+  PLAY_PRICE_CENTS,
+  SPINS_PER_PAYMENT,
+  formatBRL,
+  spinsLabel,
+} from "@/lib/config";
+import { WINNING_PRIZES } from "@/lib/prizes";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -18,13 +25,18 @@ const bungee = Bungee({
   display: "swap",
 });
 
+// A descrição sai da configuração: preço, giros e prêmios mudam num lugar só,
+// e a prévia compartilhada não fica prometendo o que a roleta não dá.
+const chamada = `${formatBRL(PLAY_PRICE_CENTS)} no Pix, ${spinsLabel(
+  SPINS_PER_PAYMENT,
+)}, ${WINNING_PRIZES.length} prêmios.`;
+
 export const metadata: Metadata = {
   title: `Girou, Ganhou! · ${EVENT.name}`,
-  description: `Gire a roleta e ganhe prêmios na hora durante a ${EVENT.name}. R$ 3 no Pix, 2 giros, 4 prêmios.`,
+  description: `Gire a roleta e ganhe prêmios na hora durante a ${EVENT.name}. ${chamada}`,
   openGraph: {
     title: `Girou, Ganhou! · ${EVENT.name}`,
-    description:
-      "Pague R$ 3 no Pix, gire 2 vezes e receba seu prêmio na hora, dentro do carro.",
+    description: `${chamada} O prêmio sai na hora, dentro do carro.`,
     type: "website",
   },
   robots: { index: false },
