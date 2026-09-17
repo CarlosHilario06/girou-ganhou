@@ -203,6 +203,26 @@ Para o QR do Pages cobrar na sua chave, defina as *variables* do repositório
 em **Settings → Secrets and variables → Actions → Variables**: `PIX_KEY`,
 `PIX_MERCHANT_NAME` e `PIX_MERCHANT_CITY`.
 
+## No ar
+
+**https://girou-ganhou-carloshilario06.vercel.app**
+
+| Endereço | Para quem |
+| --- | --- |
+| `/` | o passageiro, pelo QR Code do encosto |
+| `/qrcode` | o cartaz para imprimir (abra e dê Ctrl+P) |
+| `/motorista` | o painel, protegido por PIN |
+
+Rodando com Pix do Mercado Pago (confirmação automática) e banco Postgres no
+Neon. O deploy sai do diretório do projeto pelo CLI da Vercel:
+
+```bash
+npx vercel deploy --prod
+```
+
+Para publicar a cada `git push`, conecte o repositório em **Vercel → Project →
+Settings → Git**.
+
 ## Subindo para valer (Vercel)
 
 O caminho mais curto para a festa:

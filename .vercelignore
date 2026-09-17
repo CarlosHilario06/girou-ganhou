@@ -1,0 +1,10 @@
+# O que não precisa (nem deve) subir para a Vercel.
+node_modules
+.next
+out
+.data
+tests
+.env
+.env.*
+!.env.example
+*.log

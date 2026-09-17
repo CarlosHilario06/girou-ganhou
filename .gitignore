@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Build estático do GitHub Pages
 /out
+
+# Projeto da Vercel (gerado pelo CLI)
+.vercel
