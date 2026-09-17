@@ -22,7 +22,6 @@ export type SqlRunner = {
     text: string,
     params?: unknown[],
   ): Promise<T[]>;
-  transaction<T>(fn: (tx: SqlRunner) => Promise<T>): Promise<T>;
 };
 
 export const SCHEMA = `
@@ -136,7 +135,16 @@ export function createPostgresStore(sql: SqlRunner): Store & {
       // Uma instrução por vez: nem todo driver aceita várias de uma vez.
       for (const statement of SCHEMA.split(";")) {
         const trimmed = statement.trim();
-        if (trimmed) await sql.query(trimmed);
+        if (!trimmed) continue;
+        try {
+          await sql.query(trimmed);
+        } catch (error) {
+          // Dois processos subindo juntos podem criar a mesma tabela ao mesmo
+          // tempo; o "if not exists" não protege contra a corrida. Se o objeto
+          // já existe, está feito — qualquer outro erro sobe.
+          const code = (error as { code?: string }).code;
+          if (!["23505", "42P07", "42710"].includes(code ?? "")) throw error;
+        }
       }
     },
 
@@ -261,25 +269,29 @@ export function createPostgresStore(sql: SqlRunner): Store & {
     },
 
     async creditPayment(paymentId, spins, confirmedBy) {
-      // Só a transição pending -> paid credita. Webhook, consulta de status e
-      // confirmação manual podem chegar juntos: o primeiro pega a linha,
-      // os outros não encontram mais nada em 'pending' e saem de mãos vazias.
-      return sql.transaction(async (tx) => {
-        const rows = await tx.query<{ play_id: string }>(
-          `update payments
+      // Tudo numa instrução só, e uma instrução no Postgres já é atômica.
+      // Só a transição pending -> paid credita: webhook, consulta de status e
+      // confirmação manual podem chegar juntos que o primeiro pega a linha e
+      // os outros não acham mais nada em 'pending'.
+      //
+      // Fazer disso um comando único (em vez de uma transação com duas idas ao
+      // banco) também é o que permite rodar sobre conexões HTTP, como a do
+      // Neon em serverless.
+      const rows = await sql.query<{ id: string }>(
+        `with pago as (
+           update payments
            set status = 'paid', paid_at = now(), confirmed_by = $2
            where id = $1 and status = 'pending'
-           returning play_id`,
-          [paymentId, confirmedBy ?? null],
-        );
-        if (rows.length === 0) return false;
-
-        await tx.query(
-          `update plays set spins_available = spins_available + $2 where id = $1`,
-          [rows[0].play_id, spins],
-        );
-        return true;
-      });
+           returning play_id
+         ), creditado as (
+           update plays set spins_available = spins_available + $3
+           where id = (select play_id from pago)
+           returning id
+         )
+         select id from creditado`,
+        [paymentId, confirmedBy ?? null, spins],
+      );
+      return rows.length > 0;
     },
 
     async consumeSpin(playId) {

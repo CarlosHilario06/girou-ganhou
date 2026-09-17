@@ -17,19 +17,6 @@ export async function createPgliteStore(): Promise<
       const result = await db.query(text, params as never[]);
       return result.rows as never;
     },
-    async transaction(fn) {
-      return db.transaction(async (tx) => {
-        const inner: SqlRunner = {
-          async query(text, params = []) {
-            const result = await tx.query(text, params as never[]);
-            return result.rows as never;
-          },
-          // O store usa um nível só de transação.
-          transaction: (nested) => nested(inner),
-        };
-        return fn(inner);
-      }) as never;
-    },
   };
 
   const store = createPostgresStore(runner);

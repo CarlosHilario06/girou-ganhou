@@ -259,14 +259,20 @@ Serve qualquer Postgres — **Neon**, **Supabase**, **Railway**, **Render** ou
 Vercel. As tabelas são criadas sozinhas na primeira vez que o app sobe; não
 há migração para rodar à mão.
 
+O driver é escolhido pela própria URL: endereços do Neon usam a conexão
+**HTTPS** do `@neondatabase/serverless` — sem porta 5432 e sem conexão presa,
+que é o que serverless precisa — e qualquer outro Postgres usa TCP normal. O
+SQL é o mesmo nos dois casos.
+
 ### Por que Postgres, e não um arquivo
 
 Três operações deste app mexem em dinheiro e prêmio, e todas precisam decidir
 sozinhas, numa única ida ao banco:
 
-- **creditar o pagamento** — só a transição `pending → paid` credita, dentro
-  de uma transação. Webhook, consulta de status e confirmação manual podem
-  chegar no mesmo instante; só o primeiro credita;
+- **creditar o pagamento** — uma instrução só (`with pago as (update … where
+  status = 'pending') …`), e uma instrução no Postgres já é atômica. Webhook,
+  consulta de status e confirmação manual podem chegar no mesmo instante; só o
+  primeiro credita;
 - **gastar um giro** — o desconto é a própria condição (`where spins_available
   > 0`), então dez cliques ao mesmo tempo gastam dois giros, não dez;
 - **entregar o prêmio** — `where redeemed_at is null`, então dois celulares

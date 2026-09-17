@@ -1,3 +1,4 @@
+import { neon } from "@neondatabase/serverless";
 import postgres from "postgres";
 import { createMemoryStore } from "./memory";
 import { createPostgresStore, type SqlRunner } from "./postgres";
@@ -19,37 +20,39 @@ const globalStore = globalThis as unknown as {
   __girouMigrated?: Promise<void>;
 };
 
-/** Liga a interface mínima do store à biblioteca `postgres`. */
-function postgresRunner(url: string): SqlRunner {
+/** Neon serve o Postgres por HTTPS — sem porta 5432 e sem conexão presa,
+ *  que é justamente o que serverless precisa. */
+function neonRunner(url: string): SqlRunner {
+  const sql = neon(url);
+  return {
+    async query(text, params = []) {
+      return sql.query(text, params as never[]) as never;
+    },
+  };
+}
+
+/** Qualquer outro Postgres (Supabase, Railway, Render, VPS) por TCP. */
+function tcpRunner(url: string): SqlRunner {
   const sql = postgres(url, {
-    // Pooler de serverless (Neon, Supabase) não aceita prepared statements.
+    // Pooler de serverless não aceita prepared statements.
     prepare: false,
     max: Number(process.env.DATABASE_POOL_MAX || 5),
     idle_timeout: 20,
     connect_timeout: 10,
   });
 
-  type Tx = postgres.TransactionSql<Record<string, never>>;
-
-  // Dentro de uma transação o `postgres` troca begin por savepoint; o store
-  // usa um nível só, mas tipar os dois deixa o aninhamento correto de graça.
-  const wrapTx = (tx: Tx): SqlRunner => ({
-    async query(text, params = []) {
-      return tx.unsafe(text, params as never[]) as never;
-    },
-    async transaction(fn) {
-      return tx.savepoint((sp: Tx) => fn(wrapTx(sp))) as never;
-    },
-  });
-
   return {
     async query(text, params = []) {
       return sql.unsafe(text, params as never[]) as never;
     },
-    async transaction(fn) {
-      return sql.begin((tx: Tx) => fn(wrapTx(tx))) as never;
-    },
   };
+}
+
+/** Neon fala HTTPS; o resto do mundo fala TCP. */
+function createRunner(url: string): SqlRunner {
+  return /\.neon\.tech(:|\/|$)/.test(new URL(url).host) || url.includes(".neon.tech")
+    ? neonRunner(url)
+    : tcpRunner(url);
 }
 
 export function getStore(): Store {
@@ -64,7 +67,7 @@ export function getStore(): Store {
         "STORAGE_DRIVER=postgres exige DATABASE_URL. Pegue a connection string no painel do seu banco.",
       );
     }
-    const store = createPostgresStore(postgresRunner(url));
+    const store = createPostgresStore(createRunner(url));
     // Cria as tabelas na primeira vez, uma vez só por processo.
     globalStore.__girouMigrated ??= store.migrate();
     globalStore.__girouStore = {
