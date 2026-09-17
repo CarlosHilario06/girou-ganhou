@@ -157,6 +157,13 @@ queda suave para navegadores sem suporte e respeito a
 
 ## Publicação no GitHub Pages (versão vitrine)
 
+### Ligando o Pages (uma vez só)
+
+O GitHub não deixa o workflow criar o site sozinho. Antes do primeiro deploy,
+abra **Settings → Pages** do repositório e escolha **Source: GitHub Actions**.
+Depois disso todo push publica sozinho. O endereço fica
+`https://<seu-usuario>.github.io/girou-ganhou/`.
+
 O workflow `.github/workflows/pages.yml` publica o app no GitHub Pages a cada
 push. **Mas o Pages só serve arquivos estáticos — ele não roda servidor.**
 Para caber lá, o build de Pages:

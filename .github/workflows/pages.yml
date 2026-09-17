@@ -34,11 +34,22 @@ jobs:
 
       - run: npm test
 
+      # Se o Pages ainda não estiver ligado no repositório, este passo falha:
+      # o token do workflow não tem permissão para criar o site sozinho.
       - name: Configurar Pages
         id: pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
+
+      - name: Explicar como ligar o Pages
+        if: failure() && steps.pages.outcome == 'failure'
+        run: |
+          echo "::error::O GitHub Pages ainda não está ligado neste repositório."
+          echo "Ligue uma vez em Settings -> Pages e escolha Source: GitHub Actions:"
+          echo "  https://github.com/${{ github.repository }}/settings/pages"
+          echo "Depois é só rodar este workflow de novo (Actions -> Publicar no GitHub Pages -> Run workflow)."
+          exit 1
 
       # Hospedagem estática não executa servidor: as rotas de API e o painel
       # do motorista (que lê cookie e dados no servidor) ficam de fora deste
