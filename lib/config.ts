@@ -1,3 +1,5 @@
+import { asset } from "./asset";
+
 /**
  * Configuração central do app "Girou, Ganhou!".
  * Tudo que o motorista costuma querer mudar (preço, textos, marca) fica aqui
@@ -10,7 +12,7 @@ export const EVENT = {
   edition: process.env.NEXT_PUBLIC_EVENT_EDITION || "2026",
   city: process.env.NEXT_PUBLIC_EVENT_CITY || "Avaré",
   /** Troque o arquivo em /public/brand/ para usar a logo oficial em alta. */
-  logo: process.env.NEXT_PUBLIC_EVENT_LOGO || "/brand/emapa.svg",
+  logo: asset(process.env.NEXT_PUBLIC_EVENT_LOGO || "/brand/emapa.svg"),
 } as const;
 
 export const DRIVER = {

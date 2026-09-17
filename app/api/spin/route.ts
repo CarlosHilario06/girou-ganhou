@@ -42,7 +42,8 @@ export async function POST(request: Request) {
   const spin = {
     id: newId("spin"),
     prizeId: prize.id,
-    code: newPrizeCode(),
+    // Fatia sem prêmio não gera código para o motorista validar.
+    code: prize.win ? newPrizeCode() : undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
       title: prize.title,
       description: prize.description,
       emoji: prize.emoji,
+      win: prize.win,
     },
     code: spin.code,
     play: toPublicPlay(play, getPaymentProvider().manualConfirmation),

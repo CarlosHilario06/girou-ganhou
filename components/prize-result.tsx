@@ -8,7 +8,9 @@ export type SpinResult = {
   title: string;
   description: string;
   emoji: string;
-  code: string;
+  win: boolean;
+  /** Só existe quando ganhou. */
+  code?: string;
 };
 
 /** Chuva de confete nas cores da festa. */
@@ -40,9 +42,12 @@ export function PrizeResult({
   onSpinAgain: () => void;
   onClose: () => void;
 }) {
+  const key = result.code ?? result.title;
+
+  // Confete é só para quem ganhou — não se comemora derrota.
   useEffect(() => {
-    celebrate();
-  }, [result.code]);
+    if (result.win) celebrate();
+  }, [key, result.win]);
 
   return (
     <div
@@ -51,9 +56,17 @@ export function PrizeResult({
       aria-modal="true"
       aria-labelledby="prize-title"
     >
-      <div className="animate-pop-in w-full max-w-md rounded-t-3xl border border-gold/40 bg-surface p-6 text-center shadow-2xl sm:rounded-3xl">
-        <p className="font-display text-sm uppercase tracking-[0.3em] text-gold">
-          Girou, ganhou!
+      <div
+        className={`animate-pop-in w-full max-w-md rounded-t-3xl border bg-surface p-6 text-center shadow-2xl sm:rounded-3xl ${
+          result.win ? "border-gold/40" : "border-line"
+        }`}
+      >
+        <p
+          className={`font-display text-sm uppercase tracking-[0.3em] ${
+            result.win ? "text-gold" : "text-ink-muted"
+          }`}
+        >
+          {result.win ? "Girou, ganhou!" : "Quase!"}
         </p>
 
         <div className="my-4 text-6xl" aria-hidden="true">
@@ -67,17 +80,21 @@ export function PrizeResult({
           {result.description}
         </p>
 
-        <div className="my-6 rounded-2xl border-2 border-dashed border-gold/60 bg-gold/10 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-            Código do prêmio
-          </p>
-          <p className="font-mono text-3xl font-black tracking-[0.2em] text-ink">
-            {result.code}
-          </p>
-          <p className="mt-2 text-xs text-ink-muted">
-            Mostre esta tela para o motorista para receber na hora.
-          </p>
-        </div>
+        {result.win && result.code ? (
+          <div className="my-6 rounded-2xl border-2 border-dashed border-gold/60 bg-gold/10 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+              Código do prêmio
+            </p>
+            <p className="font-mono text-3xl font-black tracking-[0.2em] text-ink">
+              {result.code}
+            </p>
+            <p className="mt-2 text-xs text-ink-muted">
+              Mostre esta tela para o motorista para receber na hora.
+            </p>
+          </div>
+        ) : (
+          <div className="my-6 h-px bg-line" />
+        )}
 
         {spinsLeft > 0 ? (
           <Button variant="gold" size="lg" onClick={onSpinAgain} className="w-full">

@@ -2,17 +2,9 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { gameApi, type Charge } from "@/lib/game-client";
 import type { PublicPlay } from "@/lib/play-service";
 import { Button } from "./ui";
-
-type Charge = {
-  id: string;
-  payload: string;
-  qrCode: string;
-  amountCents: number;
-  expiresAt: string;
-  manualConfirmation: boolean;
-};
 
 type PaymentModalProps = {
   spins: number;
@@ -58,6 +50,7 @@ export function PaymentModal({
   );
   const [error, setError] = useState<string | null>(null);
   const [paidPlay, setPaidPlay] = useState<PublicPlay | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const countdown = useCountdown(charge?.expiresAt);
@@ -68,11 +61,9 @@ export function PaymentModal({
 
     (async () => {
       try {
-        const response = await fetch("/api/payments", { method: "POST" });
-        const data = await response.json();
+        const created = await gameApi.createPayment();
         if (!active) return;
-        if (!response.ok) throw new Error(data.error ?? "Falha ao gerar o Pix.");
-        setCharge(data.payment);
+        setCharge(created);
         setStatus("waiting");
       } catch (createError) {
         if (!active) return;
@@ -92,16 +83,14 @@ export function PaymentModal({
 
   // Enquanto o popup está aberto, pergunta ao servidor se o Pix caiu.
   useEffect(() => {
-    if (status !== "waiting" || !charge) return;
+    // No modo estático não há o que consultar: quem confirma é o jogador.
+    if (status !== "waiting" || !charge || charge.selfConfirm) return;
     let active = true;
 
     const check = async () => {
       try {
-        const response = await fetch(`/api/payments/${charge.id}`, {
-          cache: "no-store",
-        });
-        if (!response.ok || !active) return;
-        const data = await response.json();
+        const data = await gameApi.paymentStatus(charge.id);
+        if (!active) return;
         if (data.status === "paid") {
           setPaidPlay(data.play);
           setStatus("paid");
@@ -240,15 +229,40 @@ export function PaymentModal({
                 </div>
 
                 <div className="flex items-center justify-center gap-2 text-sm text-ink-muted">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
-                  </span>
-                  {charge.manualConfirmation
-                    ? "Aguardando o motorista confirmar o recebimento"
-                    : "Aguardando o pagamento cair"}
+                  {charge.selfConfirm ? null : (
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
+                    </span>
+                  )}
+                  {charge.selfConfirm
+                    ? "Pague e toque no botão abaixo"
+                    : charge.manualConfirmation
+                      ? "Aguardando o motorista confirmar o recebimento"
+                      : "Aguardando o pagamento cair"}
                   <span className="font-mono font-bold text-ink">{countdown}</span>
                 </div>
+
+                {charge.selfConfirm ? (
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    loading={confirming}
+                    onClick={async () => {
+                      setConfirming(true);
+                      try {
+                        const data = await gameApi.confirmPayment(charge.id);
+                        setPaidPlay(data.play);
+                        setStatus("paid");
+                      } finally {
+                        setConfirming(false);
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    Já paguei — liberar meus giros
+                  </Button>
+                ) : null}
 
                 <div>
                   <label

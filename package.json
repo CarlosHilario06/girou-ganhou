@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test --experimental-strip-types \"tests/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:static": "STATIC_EXPORT=1 NEXT_PUBLIC_STATIC_MODE=1 next build"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

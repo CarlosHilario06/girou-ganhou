@@ -1,0 +1,81 @@
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - claude/vibrant-edison-5a41f7
+  workflow_dispatch:
+
+# Permissões exigidas pelo deploy oficial de Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Um deploy por vez; se chegar outro push, o da vez termina antes.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Configurar Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # Hospedagem estática não executa servidor: as rotas de API e o painel
+      # do motorista (que lê cookie e dados no servidor) ficam de fora deste
+      # build. O checkout é descartável, então remover aqui não afeta o repo.
+      - name: Remover rotas que exigem servidor
+        run: rm -rf app/api app/motorista
+
+      - name: Build estático
+        env:
+          STATIC_EXPORT: "1"
+          NEXT_PUBLIC_STATIC_MODE: "1"
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_EVENT_NAME: EMAPA 56 Anos
+          NEXT_PUBLIC_EVENT_EDITION: "2026"
+          NEXT_PUBLIC_EVENT_CITY: Avaré
+          NEXT_PUBLIC_PLAY_PRICE_CENTS: "300"
+          NEXT_PUBLIC_SPINS_PER_PAYMENT: "2"
+          # Chave Pix da vitrine. Troque pela chave real do motorista quando
+          # quiser que o QR do Pages cobre de verdade.
+          NEXT_PUBLIC_PIX_KEY: ${{ vars.PIX_KEY }}
+          NEXT_PUBLIC_PIX_MERCHANT_NAME: ${{ vars.PIX_MERCHANT_NAME }}
+          NEXT_PUBLIC_PIX_MERCHANT_CITY: ${{ vars.PIX_MERCHANT_CITY }}
+        run: npm run build
+
+      - name: Impedir que o Pages processe o site com Jekyll
+        run: touch out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

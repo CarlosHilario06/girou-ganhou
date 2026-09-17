@@ -35,8 +35,8 @@ export type Payment = {
 export type SpinRecord = {
   id: string;
   prizeId: string;
-  /** Código que o ganhador mostra para o motorista. */
-  code: string;
+  /** Código que o ganhador mostra para o motorista. Fatia sem prêmio não tem. */
+  code?: string;
   createdAt: string;
   redeemedAt?: string;
 };
@@ -148,9 +148,10 @@ export function findSpinByCode(
   code: string,
 ): { play: Play; spin: SpinRecord } | undefined {
   const normalized = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!normalized) return undefined;
   for (const play of Object.values(load().plays)) {
     const spin = play.spins.find(
-      (s) => s.code.replace(/[^A-Z0-9]/g, "") === normalized,
+      (s) => s.code && s.code.replace(/[^A-Z0-9]/g, "") === normalized,
     );
     if (spin) return { play, spin };
   }

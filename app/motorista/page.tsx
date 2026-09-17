@@ -37,15 +37,20 @@ export default async function DriverPage() {
     play.payments.filter((payment) => payment.status === "paid"),
   );
 
+  // Giros sem prêmio não entram na lista: não há nada para entregar.
   const prizes = plays.flatMap((play) =>
-    play.spins.map((spin) => ({
-      code: spin.code,
-      title: getPrize(spin.prizeId)?.title ?? "Prêmio",
-      emoji: getPrize(spin.prizeId)?.emoji ?? "🎁",
-      winner: play.name,
-      createdAt: spin.createdAt,
-      redeemedAt: spin.redeemedAt,
-    })),
+    play.spins.flatMap((spin) => {
+      const prize = getPrize(spin.prizeId);
+      if (!prize?.win || !spin.code) return [];
+      return {
+        code: spin.code,
+        title: prize.title,
+        emoji: prize.emoji,
+        winner: play.name,
+        createdAt: spin.createdAt,
+        redeemedAt: spin.redeemedAt,
+      };
+    }),
   );
 
   return (

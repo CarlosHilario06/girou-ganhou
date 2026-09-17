@@ -2,8 +2,22 @@
 
 Roleta de prêmios para motorista de aplicativo. O passageiro lê o QR Code
 colado no encosto de cabeça, se cadastra, paga **R$ 3,00 no Pix** e ganha
-**2 giros** numa roleta de **4 prêmios** — todos entregues na hora, dentro do
-carro.
+**2 giros** numa roleta de 6 fatias. Deu prêmio, o motorista entrega na hora,
+dentro do carro.
+
+### Os prêmios e a chance de cada um
+
+| Fatia | Chance |
+| --- | --- |
+| 😅 Não foi dessa vez (duas fatias, uma de cada lado da roda) | ~59% |
+| 🍭 1 pirulito | ~20% |
+| 🍪 1 cookie | ~16% |
+| 🚗 Não paga a corrida | ~3% |
+| 🎟️ 3 ingressos para o parque | ~2% |
+
+Os dois prêmios grandes são de propósito difíceis, e a maioria dos giros cai
+no "não foi dessa vez". Tudo isso se ajusta em `lib/prizes.ts`, no campo
+`weight` de cada fatia.
 
 Feito para a **EMAPA 56 Anos (Avaré, 2026)**, com tema claro e escuro e as
 cores da festa (azul escuro, dourado e verde).
@@ -16,10 +30,10 @@ cores da festa (azul escuro, dourado e verde).
 | --- | --- |
 | 1 | Passageiro aponta a câmera para o QR Code no encosto |
 | 2 | Cadastro rápido: nome e celular |
-| 3 | A roleta aparece com os 4 prêmios à vista |
+| 3 | A roleta aparece com os prêmios à vista |
 | 4 | Ao tocar em **GIRAR**, abre o popup com o QR Code do Pix de R$ 3,00 |
 | 5 | Pix confirmado → 2 giros liberados automaticamente |
-| 6 | Cada giro sorteia um prêmio e gera um **código** (ex.: `TNV-5DG`) |
+| 6 | Cada giro sorteia uma fatia; se for prêmio, gera um **código** (ex.: `TNV-5DG`) |
 | 7 | O motorista valida o código em `/motorista` e entrega o prêmio |
 
 O sorteio acontece **no servidor**. O navegador só recebe qual fatia deve
@@ -44,6 +58,7 @@ tela e aprova sozinho em 6 segundos, para você ver o fluxo inteiro.
 | `npm test` | Testes do gerador de Pix e do sorteio |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript |
+| `npm run build:static` | Build estático (o mesmo que vai para o GitHub Pages) |
 
 ## Páginas
 
@@ -101,15 +116,18 @@ chegar primeiro libera os giros.
 
 ## Personalizando
 
-**Prêmios** — `lib/prizes.ts`. Cada prêmio tem texto, cor, emoji e um `weight`
-(peso do sorteio; quanto maior, mais sai). A soma não precisa dar 100.
+**Prêmios** — `lib/prizes.ts`. Cada fatia tem texto, cor, emoji, um `weight`
+(peso do sorteio; quanto maior, mais sai) e `win` (false na fatia que não dá
+prêmio — ela não gera código nem aparece no painel do motorista).
 
 ```ts
-{ id: "corrida-gratis", label: "CORRIDA", sublabel: "GRÁTIS", weight: 5, ... }
+{ id: "ingresso-parque", label: "3 INGRESSOS", sublabel: "DO PARQUE", weight: 2, win: true }
 ```
 
-A roleta se adapta ao número de fatias, mas 4 é o que cabe bem na tela do
-celular.
+A roleta se adapta ao número de fatias. Com mais de 8 o texto começa a ficar
+apertado na tela do celular. Se usar duas fatias iguais de "não ganhou nada",
+deixe uma longe da outra na lista — lado a lado elas viram um bloco só na
+roda (tem teste para isso).
 
 **Preço e giros** — `.env.local`:
 
@@ -136,6 +154,31 @@ NEXT_PUBLIC_EVENT_LOGO=/brand/emapa-oficial.png
 revelação circular que nasce no ponto do clique (View Transitions API), com
 queda suave para navegadores sem suporte e respeito a
 `prefers-reduced-motion`.
+
+## Publicação no GitHub Pages (versão vitrine)
+
+O workflow `.github/workflows/pages.yml` publica o app no GitHub Pages a cada
+push. **Mas o Pages só serve arquivos estáticos — ele não roda servidor.**
+Para caber lá, o build de Pages:
+
+- remove `app/api` e `app/motorista` (precisam de servidor);
+- liga o modo estático, em que o sorteio, o saldo de giros e os prêmios ficam
+  no `localStorage` do navegador do próprio jogador (`lib/game-client.ts`);
+- troca a confirmação do Pix por um botão **"Já paguei"** apertado pelo
+  próprio jogador, já que não há ninguém do lado de fora para conferir.
+
+Ou seja: a versão do Pages serve para **mostrar o app** — abre no celular,
+gira, mostra o prêmio e imprime o cartaz do QR. Não serve para valer dinheiro,
+porque quem quiser pode limpar o `localStorage` e girar de graça. A página
+avisa isso em cima, com todas as letras.
+
+**Para a festa de verdade**, suba a versão completa (com `/api` e
+`/motorista`) em qualquer hospedagem que rode Node — Vercel, Railway, Render
+ou uma VPS. Aí o sorteio acontece no servidor e o Pix é conferido de verdade.
+
+Para o QR do Pages cobrar na sua chave, defina as *variables* do repositório
+em **Settings → Secrets and variables → Actions → Variables**: `PIX_KEY`,
+`PIX_MERCHANT_NAME` e `PIX_MERCHANT_CITY`.
 
 ## Onde os dados ficam
 

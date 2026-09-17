@@ -39,13 +39,16 @@ export function toPublicPlay(
     id: fresh.id,
     name: fresh.name,
     spinsAvailable: fresh.spinsAvailable,
-    results: fresh.spins.map((spin) => {
+    // A lista "Seus prêmios" mostra só o que dá para resgatar: as fatias
+    // sem prêmio ficam de fora.
+    results: fresh.spins.flatMap((spin) => {
       const prize = getPrize(spin.prizeId);
+      if (!prize?.win || !spin.code) return [];
       return {
         prizeId: spin.prizeId,
-        title: prize?.title ?? "Prêmio",
-        description: prize?.description ?? "",
-        emoji: prize?.emoji ?? "🎁",
+        title: prize.title,
+        description: prize.description,
+        emoji: prize.emoji,
         code: spin.code,
         createdAt: spin.createdAt,
         redeemedAt: spin.redeemedAt,

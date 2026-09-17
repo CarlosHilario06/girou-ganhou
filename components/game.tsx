@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { gameApi } from "@/lib/game-client";
 import type { PublicPlay } from "@/lib/play-service";
 import type { Prize } from "@/lib/prizes";
 import { CheckoutForm } from "./checkout-form";
@@ -14,6 +15,8 @@ import { Wheel, type WheelHandle } from "./wheel";
 
 type GameProps = {
   prizes: Prize[];
+  /** Só os prêmios de verdade, para a vitrine abaixo da roleta. */
+  winningPrizes: Prize[];
   event: { name: string; edition: string; city: string; logo: string };
   driver: { name: string; whatsapp: string };
   priceLabel: string;
@@ -22,6 +25,7 @@ type GameProps = {
 
 export function Game({
   prizes,
+  winningPrizes,
   event,
   driver,
   priceLabel,
@@ -40,9 +44,7 @@ export function Game({
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch("/api/play", { cache: "no-store" });
-        const data = await response.json();
-        setPlay(data.play);
+        setPlay(await gameApi.load());
       } catch {
         // Sem rede agora: o cadastro segue disponível.
       } finally {
@@ -53,20 +55,7 @@ export function Game({
 
   const register = useCallback(
     async (data: { name: string; phone: string }) => {
-      // De onde veio o acesso (?src=encosto, ?src=adesivo...), para o motorista
-      // saber qual QR Code está dando resultado.
-      const source =
-        new URLSearchParams(window.location.search).get("src")?.slice(0, 40) ??
-        undefined;
-
-      const response = await fetch("/api/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, source }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? "Não foi possível continuar.");
-      setPlay(body.play);
+      setPlay(await gameApi.register(data));
       // Cadastro feito: a roleta volta a ser o centro das atenções.
       document
         .getElementById("roleta")
@@ -98,9 +87,7 @@ export function Game({
     setResult(null);
 
     try {
-      const response = await fetch("/api/spin", { method: "POST" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Falha ao girar.");
+      const data = await gameApi.spin();
 
       await wheelRef.current?.spinTo(data.prizeIndex);
       setPlay(data.play);
@@ -158,10 +145,18 @@ export function Game({
             .
           </h1>
           <p className="mx-auto mt-3 max-w-md text-balance text-sm text-ink-muted sm:text-base">
-            {priceLabel} no Pix e você gira {spinsPerPayment} vezes. São 4 prêmios
-            na roleta — e todos são entregues na hora, aqui no carro.
+            {priceLabel} no Pix e você gira {spinsPerPayment} vezes. Deu prêmio,
+            o motorista entrega na hora — aqui mesmo, dentro do carro.
           </p>
         </div>
+
+        {gameApi.isStatic ? (
+          <p className="mx-auto mb-6 max-w-md rounded-2xl border border-gold/40 bg-gold/10 px-4 py-3 text-center text-xs text-ink-muted">
+            <strong className="text-ink">Versão de demonstração.</strong> Aqui o
+            sorteio roda no seu próprio navegador e ninguém confere o Pix — serve
+            para conhecer o app, não para valer prêmio.
+          </p>
+        ) : null}
 
         <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           {/* ------------------------------ Roleta ------------------------------ */}
@@ -190,8 +185,11 @@ export function Game({
               </button>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-2.5">
-              {prizes.map((prize) => (
+            <p className="mt-6 text-center text-xs font-bold uppercase tracking-wider text-ink-muted">
+              O que dá para ganhar
+            </p>
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+              {winningPrizes.map((prize) => (
                 <div
                   key={prize.id}
                   className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface/70 p-3 backdrop-blur"

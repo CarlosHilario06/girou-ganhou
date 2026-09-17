@@ -6,12 +6,13 @@ import {
   SPINS_PER_PAYMENT,
   formatBRL,
 } from "@/lib/config";
-import { PRIZES } from "@/lib/prizes";
+import { PRIZES, WINNING_PRIZES } from "@/lib/prizes";
 
 export default function HomePage() {
   return (
     <Game
       prizes={PRIZES}
+      winningPrizes={WINNING_PRIZES}
       event={{ ...EVENT }}
       driver={{ ...DRIVER }}
       priceLabel={formatBRL(PLAY_PRICE_CENTS)}

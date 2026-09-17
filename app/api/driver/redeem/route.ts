@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     Date.parse(spin.createdAt) + PRIZE_VALIDITY_DAYS * 24 * 60 * 60_000;
 
   const base = {
-    code: spin.code,
+    code: spin.code ?? "",
     prize: prize?.title ?? "Prêmio",
     emoji: prize?.emoji ?? "🎁",
     winner: play.name,

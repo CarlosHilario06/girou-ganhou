@@ -202,7 +202,7 @@ export function Wheel({ prizes, isDark, spinning, ref }: WheelProps) {
           onTransitionEnd={handleTransitionEnd}
         >
           {prizes.map((prize, index) => {
-            const [labelX, labelY] = pointAt(0, RADIUS * 0.58);
+            const [labelX, labelY] = pointAt(0, RADIUS * 0.64);
             return (
               <g
                 key={prize.id}
@@ -216,34 +216,34 @@ export function Wheel({ prizes, isDark, spinning, ref }: WheelProps) {
                 />
                 <text
                   x={labelX}
-                  y={labelY - 16}
+                  y={labelY - 14}
                   textAnchor="middle"
-                  fontSize="24"
+                  fontSize="21"
                   aria-hidden="true"
                 >
                   {prize.emoji}
                 </text>
                 <text
                   x={labelX}
-                  y={labelY + 8}
+                  y={labelY + 7}
                   textAnchor="middle"
                   fill={prize.ink}
-                  fontSize="17"
+                  fontSize="13"
                   fontWeight="800"
-                  letterSpacing="0.5"
+                  letterSpacing="0.2"
                 >
                   {prize.label}
                 </text>
                 {prize.sublabel ? (
                   <text
                     x={labelX}
-                    y={labelY + 26}
+                    y={labelY + 22}
                     textAnchor="middle"
                     fill={prize.ink}
-                    fontSize="12"
+                    fontSize="10"
                     fontWeight="700"
-                    opacity="0.85"
-                    letterSpacing="0.6"
+                    opacity="0.9"
+                    letterSpacing="0.3"
                   >
                     {prize.sublabel}
                   </text>

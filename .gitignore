@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Dados locais do driver de arquivo
 .data
+
+# Build estático do GitHub Pages
+/out
