@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { afterEach, beforeEach } from "node:test";
 import { mercadoPagoProvider } from "../lib/payments/mercadopago.ts";
-import type { Payment, Play } from "../lib/store.ts";
+import type { Payment, Play } from "../lib/store/types.ts";
 
 /**
  * Teste do caminho do dinheiro sem gastar dinheiro: a API do Mercado Pago é
@@ -42,6 +42,7 @@ const play = { id: "play_abc", name: "Maria Teste" } as Play;
 function payment(overrides: Partial<Payment> = {}): Payment {
   return {
     id: "pay_1",
+    playId: "play_abc",
     provider: "mercadopago",
     externalId: "123456",
     amountCents: 300,

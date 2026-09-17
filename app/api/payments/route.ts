@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { PIX_EXPIRATION_MINUTES, PLAY_PRICE_CENTS, EVENT } from "@/lib/config";
 import { getPaymentProvider } from "@/lib/payments";
-import { toPublicPlay } from "@/lib/play-service";
+import { loadPlay, toPublicPlay } from "@/lib/play-service";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getPlayId } from "@/lib/session";
-import { expireStalePayments, getPlay, newId, savePlay } from "@/lib/store";
+import { getStore, newId } from "@/lib/store";
 
 /** Gera a cobrança Pix de uma jogada e devolve o QR pronto para exibir. */
 export async function POST(request: Request) {
@@ -20,7 +20,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const play = getPlay(await getPlayId());
+  const playId = await getPlayId();
+  const play = playId ? await loadPlay(playId) : undefined;
   if (!play) {
     return NextResponse.json(
       { error: "Sessão expirada. Faça seu cadastro de novo." },
@@ -28,11 +29,11 @@ export async function POST(request: Request) {
     );
   }
 
-  expireStalePayments(play);
+  const store = getStore();
   const provider = getPaymentProvider();
 
   // Se já existe um Pix válido, reaproveita em vez de gerar outro.
-  const existing = play.payments.find((p) => p.status === "pending");
+  const existing = await store.findPendingPayment(play.id);
   if (existing) {
     return NextResponse.json({
       payment: {
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
 
     const payment = {
       id: newId("pay"),
+      playId: play.id,
       provider: provider.id,
       externalId: charge.externalId,
       amountCents: PLAY_PRICE_CENTS,
@@ -71,8 +73,8 @@ export async function POST(request: Request) {
       expiresAt: expiresAt.toISOString(),
     };
 
+    await store.addPayment(payment);
     play.payments.push(payment);
-    savePlay(play);
 
     return NextResponse.json({
       payment: {

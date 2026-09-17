@@ -1,17 +1,17 @@
 /**
  * As 6 fatias da roleta.
  *
- * `weight` é o peso do sorteio (quanto maior, mais sai). A soma não precisa
- * dar 100: o sorteio normaliza sozinho. Os pesos atuais dão mais ou menos:
+ * `weight` é o peso do sorteio. Os pesos somam 1000, então cada 10 pontos
+ * valem 1% — fica fácil mexer sem calcular nada:
  *
- *   😅 Não foi dessa vez ....... 59%  (duas fatias, uma em cada lado da roda)
- *   🍭 Pirulito ................ 20%
- *   🍪 Cookie .................. 16%
- *   🚗 Não paga a corrida ....... 3%
- *   🎟️ Ingressos do parque ...... 2%
+ *   😅 Não foi dessa vez ....... 70%  (duas fatias, uma em cada lado da roda)
+ *   🥜 1 paçoca ................ 25%
+ *   💵 R$ 10,00 ................. 3%
+ *   🎟️ 3 ingressos do parque .... 1%
+ *   🚗 Não paga a corrida ........ 1%
  *
  * `win: false` marca a fatia que não dá prêmio: não gera código, não aparece
- * na lista de prêmios do passageiro nem no painel do motorista.
+ * no painel do motorista e não entra no letreiro de ganhadores.
  */
 export type Prize = {
   id: string;
@@ -35,16 +35,16 @@ export type Prize = {
 
 export const PRIZES: Prize[] = [
   {
-    id: "pirulito",
-    label: "PIRULITO",
-    title: "1 pirulito",
+    id: "pacoca",
+    label: "PAÇOCA",
+    title: "1 paçoca",
     description:
-      "Um pirulito para adoçar a viagem. Mostre este código para o motorista antes de descer.",
-    emoji: "🍭",
+      "Uma paçoca para a viagem. Mostre este código para o motorista antes de descer.",
+    emoji: "🥜",
     fill: "#F4B324",
     fillDark: "#E0A312",
     ink: "#08142E",
-    weight: 20,
+    weight: 250,
     win: true,
   },
   {
@@ -57,34 +57,35 @@ export const PRIZES: Prize[] = [
     fill: "#7A8AA6",
     fillDark: "#41537A",
     ink: "#FFFFFF",
-    weight: 30,
+    weight: 350,
     win: false,
   },
   {
     id: "ingresso-parque",
     label: "3 INGRESSOS",
     sublabel: "DO PARQUE",
-    title: "3 ingressos para o parque",
+    title: "3 ingressos do parque",
     description:
       "O prêmio grande! 3 ingressos para o parque. Mostre este código para o motorista antes de descer.",
     emoji: "🎟️",
     fill: "#16A64F",
     fillDark: "#12873F",
     ink: "#FFFFFF",
-    weight: 2,
+    weight: 10,
     win: true,
   },
   {
-    id: "cookie",
-    label: "COOKIE",
-    title: "1 cookie",
+    id: "dez-reais",
+    label: "R$ 10",
+    sublabel: "NA MÃO",
+    title: "R$ 10,00 em dinheiro",
     description:
-      "Um cookie para a viagem. Mostre este código para o motorista antes de descer.",
-    emoji: "🍪",
+      "Dez reais na mão, agora. Mostre este código para o motorista antes de descer.",
+    emoji: "💵",
     fill: "#1E63D8",
     fillDark: "#1750B4",
     ink: "#FFFFFF",
-    weight: 16,
+    weight: 30,
     win: true,
   },
   {
@@ -97,7 +98,7 @@ export const PRIZES: Prize[] = [
     fill: "#7A8AA6",
     fillDark: "#41537A",
     ink: "#FFFFFF",
-    weight: 30,
+    weight: 350,
     win: false,
   },
   {
@@ -111,12 +112,12 @@ export const PRIZES: Prize[] = [
     fill: "#0E7C8E",
     fillDark: "#0A6376",
     ink: "#FFFFFF",
-    weight: 3,
+    weight: 10,
     win: true,
   },
 ];
 
-/** Só os prêmios de verdade, para a vitrine abaixo da roleta. */
+/** Só os prêmios de verdade. */
 export const WINNING_PRIZES = PRIZES.filter((prize) => prize.win);
 
 export function getPrize(id: string): Prize | undefined {

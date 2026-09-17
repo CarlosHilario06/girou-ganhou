@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getPaymentProvider } from "@/lib/payments";
-import { toPublicPlay } from "@/lib/play-service";
+import { loadPlay, toPublicPlay } from "@/lib/play-service";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { clearPlay, getPlayId, setPlayId } from "@/lib/session";
-import { createPlay, getPlay } from "@/lib/store";
+import { getStore } from "@/lib/store";
 
 /** Aceita "(14) 99999-9999", "14999999999" etc. e devolve só os dígitos. */
 function normalizePhone(raw: string): string | null {
@@ -19,7 +19,8 @@ function normalizeName(raw: string): string | null {
 }
 
 export async function GET() {
-  const play = getPlay(await getPlayId());
+  const playId = await getPlayId();
+  const play = playId ? await loadPlay(playId) : undefined;
   if (!play) return NextResponse.json({ play: null });
   return NextResponse.json({
     play: toPublicPlay(play, getPaymentProvider().manualConfirmation),
@@ -60,7 +61,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const play = createPlay({ name, phone, source: body.source?.slice(0, 40) });
+  const play = await getStore().createPlay({
+    name,
+    phone,
+    source: body.source?.slice(0, 40),
+  });
   await setPlayId(play.id);
 
   return NextResponse.json({

@@ -1,11 +1,6 @@
 import { SPINS_PER_PAYMENT } from "@/lib/config";
-import { getPrize, type Prize } from "@/lib/prizes";
-import {
-  expireStalePayments,
-  savePlay,
-  type Payment,
-  type Play,
-} from "@/lib/store";
+import { getPrize } from "@/lib/prizes";
+import { getStore, type Play } from "@/lib/store";
 
 /** Formato da jogada que o navegador pode ver (sem nada sensível). */
 export type PublicPlay = {
@@ -32,16 +27,15 @@ export function toPublicPlay(
   play: Play,
   manualConfirmation: boolean,
 ): PublicPlay {
-  const fresh = expireStalePayments(play);
-  const pending = fresh.payments.find((p) => p.status === "pending");
+  const pending = play.payments.find((p) => p.status === "pending");
 
   return {
-    id: fresh.id,
-    name: fresh.name,
-    spinsAvailable: fresh.spinsAvailable,
+    id: play.id,
+    name: play.name,
+    spinsAvailable: play.spinsAvailable,
     // A lista "Seus prêmios" mostra só o que dá para resgatar: as fatias
     // sem prêmio ficam de fora.
-    results: fresh.spins.flatMap((spin) => {
+    results: play.spins.flatMap((spin) => {
       const prize = getPrize(spin.prizeId);
       if (!prize?.win || !spin.code) return [];
       return {
@@ -64,26 +58,28 @@ export function toPublicPlay(
   };
 }
 
-/**
- * Credita os giros de um pagamento aprovado.
- * Idempotente de propósito: webhook, polling e confirmação manual podem
- * chegar todos no mesmo pagamento, e só o primeiro credita.
- */
-export function creditPayment(
-  play: Play,
-  payment: Payment,
-  confirmedBy?: string,
-): boolean {
-  if (payment.status === "paid") return false;
-
-  payment.status = "paid";
-  payment.paidAt = new Date().toISOString();
-  if (confirmedBy) payment.confirmedBy = confirmedBy;
-  play.spinsAvailable += SPINS_PER_PAYMENT;
-  savePlay(play);
-  return true;
+/** Lê a jogada já com os Pix vencidos marcados como expirados. */
+export async function loadPlay(id: string): Promise<Play | undefined> {
+  const store = getStore();
+  await store.expireStalePayments(id);
+  return store.getPlay(id);
 }
 
-export function prizeIndex(prize: Prize, prizes: Prize[]): number {
-  return prizes.findIndex((p) => p.id === prize.id);
+/**
+ * Credita os giros de um pagamento aprovado e devolve a jogada atualizada.
+ * O crédito em si é atômico no armazenamento: webhook, consulta de status e
+ * confirmação manual podem chegar juntos que só o primeiro credita.
+ */
+export async function creditAndReload(
+  paymentId: string,
+  playId: string,
+  confirmedBy?: string,
+): Promise<{ credited: boolean; play: Play | undefined }> {
+  const store = getStore();
+  const credited = await store.creditPayment(
+    paymentId,
+    SPINS_PER_PAYMENT,
+    confirmedBy,
+  );
+  return { credited, play: await store.getPlay(playId) };
 }

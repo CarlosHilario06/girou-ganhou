@@ -22,7 +22,21 @@ test("as duas fatias sem prêmio não ficam lado a lado", () => {
 test("a maioria dos giros cai no 'não foi dessa vez'", () => {
   const total = PRIZES.reduce((sum, p) => sum + p.weight, 0);
   const semPremio = PRIZES.filter((p) => !p.win).reduce((s, p) => s + p.weight, 0);
-  assert.ok(semPremio / total > 0.5, `esperado mais de 50%, veio ${semPremio / total}`);
+  assert.ok(
+    semPremio / total > 0.5,
+    `esperado mais de 50%, veio ${((semPremio / total) * 100).toFixed(1)}%`,
+  );
+});
+
+test("as chances combinadas são as que o motorista pediu", () => {
+  const total = PRIZES.reduce((sum, p) => sum + p.weight, 0);
+  const chance = (id: string) =>
+    ((PRIZES.find((p) => p.id === id)?.weight ?? 0) / total) * 100;
+
+  assert.equal(chance("ingresso-parque"), 1, "ingresso do parque: 1%");
+  assert.equal(chance("corrida-gratis"), 1, "não paga a corrida: 1%");
+  assert.ok(chance("dez-reais") <= 5, `R$ 10 tem de ser raro, veio ${chance("dez-reais")}%`);
+  assert.ok(chance("pacoca") > chance("dez-reais"), "a paçoca é o prêmio de consolo");
 });
 
 test("ingresso e corrida grátis são os mais difíceis", () => {

@@ -12,11 +12,10 @@ import { useTheme } from "./theme";
 import { ThemeToggle } from "./theme-toggle";
 import { Badge, Button, Card } from "./ui";
 import { Wheel, type WheelHandle } from "./wheel";
+import { WinnersTicker } from "./winners-ticker";
 
 type GameProps = {
   prizes: Prize[];
-  /** Só os prêmios de verdade, para a vitrine abaixo da roleta. */
-  winningPrizes: Prize[];
   event: { name: string; edition: string; city: string; logo: string };
   driver: { name: string; whatsapp: string };
   priceLabel: string;
@@ -25,7 +24,6 @@ type GameProps = {
 
 export function Game({
   prizes,
-  winningPrizes,
   event,
   driver,
   priceLabel,
@@ -110,6 +108,12 @@ export function Game({
   }, []);
 
   const spinsLeft = play?.spinsAvailable ?? 0;
+
+  // Prêmio ainda não entregue: o código tem de continuar ao alcance da mão.
+  const naoEntregue = play?.results.findLast((r) => !r.redeemedAt);
+  const premioAberto: SpinResult | null = naoEntregue
+    ? { ...naoEntregue, win: true }
+    : null;
   const hasAccount = Boolean(play);
 
   return (
@@ -134,6 +138,10 @@ export function Game({
         <ThemeToggle />
       </header>
 
+      <div className="mt-4">
+        <WinnersTicker />
+      </div>
+
       <main className="mx-auto w-full max-w-5xl px-5 pb-16 pt-8">
         <div className="mb-6 text-center animate-float-up sm:mb-8">
           <Badge tone="gold">🎡 Promoção do motorista</Badge>
@@ -150,13 +158,6 @@ export function Game({
           </p>
         </div>
 
-        {gameApi.isStatic ? (
-          <p className="mx-auto mb-6 max-w-md rounded-2xl border border-gold/40 bg-gold/10 px-4 py-3 text-center text-xs text-ink-muted">
-            <strong className="text-ink">Versão de demonstração.</strong> Aqui o
-            sorteio roda no seu próprio navegador e ninguém confere o Pix — serve
-            para conhecer o app, não para valer prêmio.
-          </p>
-        ) : null}
 
         <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           {/* ------------------------------ Roleta ------------------------------ */}
@@ -185,32 +186,6 @@ export function Game({
               </button>
             </div>
 
-            <p className="mt-6 text-center text-xs font-bold uppercase tracking-wider text-ink-muted">
-              O que dá para ganhar
-            </p>
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-              {winningPrizes.map((prize) => (
-                <div
-                  key={prize.id}
-                  className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface/70 p-3 backdrop-blur"
-                >
-                  <span
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg"
-                    style={{
-                      backgroundColor:
-                        theme === "dark" ? prize.fillDark : prize.fill,
-                      color: prize.ink,
-                    }}
-                    aria-hidden="true"
-                  >
-                    {prize.emoji}
-                  </span>
-                  <span className="text-xs font-semibold leading-tight text-ink">
-                    {prize.title}
-                  </span>
-                </div>
-              ))}
-            </div>
           </section>
 
           {/* ------------------------- Cadastro / painel ------------------------ */}
@@ -272,6 +247,16 @@ export function Game({
                       : `Pagar ${priceLabel} e girar`}
                   </Button>
 
+                  {premioAberto ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => setResult(premioAberto)}
+                      className="w-full"
+                    >
+                      Ver meu código de prêmio
+                    </Button>
+                  ) : null}
+
                   {error ? (
                     <p
                       role="alert"
@@ -281,36 +266,6 @@ export function Game({
                     </p>
                   ) : null}
 
-                  {play && play.results.length > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-                        Seus prêmios
-                      </p>
-                      {play.results.map((prize) => (
-                        <div
-                          key={prize.code}
-                          className="flex items-center gap-3 rounded-2xl border border-line bg-surface-2 p-3"
-                        >
-                          <span className="text-2xl" aria-hidden="true">
-                            {prize.emoji}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold text-ink">
-                              {prize.title}
-                            </p>
-                            <p className="font-mono text-xs tracking-widest text-ink-muted">
-                              {prize.code}
-                            </p>
-                          </div>
-                          {prize.redeemedAt ? (
-                            <Badge tone="green">Entregue</Badge>
-                          ) : (
-                            <Badge tone="gold">Mostrar</Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               )}
             </Card>

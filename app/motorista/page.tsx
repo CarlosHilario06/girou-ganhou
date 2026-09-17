@@ -1,8 +1,8 @@
 import { DriverPanel } from "@/components/driver-panel";
 import { getPaymentProvider } from "@/lib/payments";
-import { isDriver } from "@/lib/session";
-import { listPlays } from "@/lib/store";
 import { getPrize } from "@/lib/prizes";
+import { isDriver } from "@/lib/session";
+import { getStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -12,63 +12,35 @@ export const metadata = {
 };
 
 export default async function DriverPage() {
-  const authorized = await isDriver();
-
-  if (!authorized) {
+  if (!(await isDriver())) {
     return <DriverPanel authorized={false} />;
   }
 
-  const plays = listPlays();
+  const store = getStore();
   const provider = getPaymentProvider();
 
-  const pendingPayments = plays.flatMap((play) =>
-    play.payments
-      .filter((payment) => payment.status === "pending")
-      .map((payment) => ({
-        id: payment.id,
-        playName: play.name,
-        playPhone: play.phone,
-        amountCents: payment.amountCents,
-        createdAt: payment.createdAt,
-      })),
-  );
-
-  const paidPayments = plays.flatMap((play) =>
-    play.payments.filter((payment) => payment.status === "paid"),
-  );
-
-  // Giros sem prêmio não entram na lista: não há nada para entregar.
-  const prizes = plays.flatMap((play) =>
-    play.spins.flatMap((spin) => {
-      const prize = getPrize(spin.prizeId);
-      if (!prize?.win || !spin.code) return [];
-      return {
-        code: spin.code,
-        title: prize.title,
-        emoji: prize.emoji,
-        winner: play.name,
-        createdAt: spin.createdAt,
-        redeemedAt: spin.redeemedAt,
-      };
-    }),
-  );
+  await store.expireStalePayments();
+  const [stats, pendingPayments, prizes] = await Promise.all([
+    store.getStats(),
+    store.listPendingPayments(),
+    store.listRecentPrizes(30),
+  ]);
 
   return (
     <DriverPanel
       authorized
       providerId={provider.id}
       manualConfirmation={provider.manualConfirmation}
-      stats={{
-        players: plays.length,
-        paidCount: paidPayments.length,
-        revenueCents: paidPayments.reduce((sum, p) => sum + p.amountCents, 0),
-        prizesGiven: prizes.filter((p) => p.redeemedAt).length,
-        prizesPending: prizes.filter((p) => !p.redeemedAt).length,
-      }}
+      stats={stats}
       pendingPayments={pendingPayments}
-      prizes={prizes
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 30)}
+      prizes={prizes.map((prize) => ({
+        code: prize.code,
+        title: getPrize(prize.prizeId)?.title ?? "Prêmio",
+        emoji: getPrize(prize.prizeId)?.emoji ?? "🎁",
+        winner: prize.winner,
+        createdAt: prize.createdAt,
+        redeemedAt: prize.redeemedAt,
+      }))}
     />
   );
 }

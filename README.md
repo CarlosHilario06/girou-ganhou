@@ -9,15 +9,14 @@ dentro do carro.
 
 | Fatia | Chance |
 | --- | --- |
-| 😅 Não foi dessa vez (duas fatias, uma de cada lado da roda) | ~59% |
-| 🍭 1 pirulito | ~20% |
-| 🍪 1 cookie | ~16% |
-| 🚗 Não paga a corrida | ~3% |
-| 🎟️ 3 ingressos para o parque | ~2% |
+| 😅 Não foi dessa vez (duas fatias, uma de cada lado da roda) | 70% |
+| 🥜 1 paçoca | 25% |
+| 💵 R$ 10,00 em dinheiro | 3% |
+| 🎟️ 3 ingressos do parque | 1% |
+| 🚗 Não paga a corrida | 1% |
 
-Os dois prêmios grandes são de propósito difíceis, e a maioria dos giros cai
-no "não foi dessa vez". Tudo isso se ajusta em `lib/prizes.ts`, no campo
-`weight` de cada fatia.
+Os pesos em `lib/prizes.ts` somam 1000, então **cada 10 pontos valem 1%** — dá
+para mexer sem calcular nada.
 
 Feito para a **EMAPA 56 Anos (Avaré, 2026)**, com tema claro e escuro e as
 cores da festa (azul escuro, dourado e verde).
@@ -30,7 +29,7 @@ cores da festa (azul escuro, dourado e verde).
 | --- | --- |
 | 1 | Passageiro aponta a câmera para o QR Code no encosto |
 | 2 | Cadastro rápido: nome e celular |
-| 3 | A roleta aparece com os prêmios à vista |
+| 3 | A roleta aparece com os prêmios à vista, e o letreiro do topo mostra quem já ganhou |
 | 4 | Ao tocar em **GIRAR**, abre o popup com o QR Code do Pix de R$ 3,00 |
 | 5 | Pix confirmado → 2 giros liberados automaticamente |
 | 6 | Cada giro sorteia uma fatia; se for prêmio, gera um **código** (ex.: `TNV-5DG`) |
@@ -55,7 +54,7 @@ tela e aprova sozinho em 6 segundos, para você ver o fluxo inteiro.
 | `npm run dev` | Servidor de desenvolvimento |
 | `npm run build` | Build de produção |
 | `npm start` | Sobe o build |
-| `npm test` | Testes do gerador de Pix e do sorteio |
+| `npm test` | Testes: Pix, sorteio, pagamento e banco (Postgres de verdade, em WASM) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript |
 | `npm run build:static` | Build estático (o mesmo que vai para o GitHub Pages) |
@@ -160,6 +159,12 @@ cp ~/Downloads/logo-emapa.png public/brand/emapa-oficial.png
 NEXT_PUBLIC_EVENT_LOGO=/brand/emapa-oficial.png
 ```
 
+**Letreiro de ganhadores** — a faixa do topo mostra **ganhadores reais**,
+tirados do banco, só com o primeiro nome. Enquanto ninguém ganhou nada na
+noite, ela mostra os prêmios em jogo, para nunca ficar vazia nem inventar
+gente. Nome falso em promoção é o tipo de coisa que vira discussão no primeiro
+passageiro que perguntar quem é.
+
 **Cores e tema** — `app/globals.css`. As variáveis do tema claro ficam em
 `:root` e as do escuro em `.dark`. A troca de tema é animada com uma
 revelação circular que nasce no ponto do clique (View Transitions API), com
@@ -214,15 +219,17 @@ O caminho mais curto para a festa:
    | `MERCADOPAGO_ACCESS_TOKEN` | o Access Token de produção |
    | `MERCADOPAGO_WEBHOOK_URL` | `https://<seu-app>.vercel.app/api/payments/webhook` |
    | `NEXT_PUBLIC_APP_URL` | `https://<seu-app>.vercel.app` |
+   | `STORAGE_DRIVER` | `postgres` |
+   | `DATABASE_URL` | a connection string do seu banco |
 
-3. Faça o deploy, abra `/qrcode`, imprima e cole no encosto.
+3. Crie o banco: em [neon.com](https://neon.com) (ou Supabase) o plano grátis
+   dá conta de sobra para uma noite de festa. Copie a *connection string* e
+   cole em `DATABASE_URL`.
+4. Faça o deploy, abra `/qrcode`, imprima e cole no encosto.
 
-> **Atenção ao armazenamento.** Na Vercel o disco é descartável, então
-> `STORAGE_DRIVER=file` não serve: os prêmios sumiriam a cada reinício. Para a
-> festa, ou use uma hospedagem com disco (Railway, Render, VPS) com
-> `STORAGE_DRIVER=file`, ou troque `load`/`persist` em `lib/store.ts` por um
-> banco. O Vercel Postgres e o Supabase têm plano grátis que dá conta de
-> sobra para uma noite de festa.
+> Se deixar `STORAGE_DRIVER=memory` em produção, os prêmios somem a cada
+> reinício do servidor — e o passageiro fica com um código que o painel não
+> reconhece.
 
 ## Segredos: onde eles nunca podem estar
 
@@ -239,13 +246,36 @@ produção vazado dá acesso à movimentação da conta.
 
 `STORAGE_DRIVER` escolhe a persistência:
 
-- `memory` (padrão) — tudo em RAM. Some ao reiniciar. Bom para dev.
-- `file` — grava em `.data/plays.json`. Serve para hospedagem Node com disco
-  (Railway, Render, VPS). **Não funciona em serverless** (Vercel), onde o
-  disco é descartado a cada requisição.
+- `memory` (padrão) — tudo em RAM. Some ao reiniciar. Bom para desenvolver.
+- `postgres` — banco de verdade, apontado por `DATABASE_URL`. É o que vale
+  para a festa.
 
-Para a festa de verdade, o caminho é trocar `load`/`persist` em `lib/store.ts`
-por um banco (Postgres, Supabase, Turso). O resto do app não muda.
+```env
+STORAGE_DRIVER=postgres
+DATABASE_URL=postgres://usuario:senha@host/banco
+```
+
+Serve qualquer Postgres — **Neon**, **Supabase**, **Railway**, **Render** ou
+Vercel. As tabelas são criadas sozinhas na primeira vez que o app sobe; não
+há migração para rodar à mão.
+
+### Por que Postgres, e não um arquivo
+
+Três operações deste app mexem em dinheiro e prêmio, e todas precisam decidir
+sozinhas, numa única ida ao banco:
+
+- **creditar o pagamento** — só a transição `pending → paid` credita, dentro
+  de uma transação. Webhook, consulta de status e confirmação manual podem
+  chegar no mesmo instante; só o primeiro credita;
+- **gastar um giro** — o desconto é a própria condição (`where spins_available
+  > 0`), então dez cliques ao mesmo tempo gastam dois giros, não dez;
+- **entregar o prêmio** — `where redeemed_at is null`, então dois celulares
+  confirmando o mesmo código ao mesmo tempo só entregam uma vez.
+
+Guardar isso num arquivo JSON funcionaria numa demonstração e falharia numa
+fila de passageiros. Os testes em `tests/store.test.ts` rodam a mesma bateria
+nos dois armazenamentos — inclusive as disputas simultâneas — contra um
+Postgres de verdade (PGlite, o Postgres compilado em WebAssembly).
 
 ## Antes de ir para a rua
 
@@ -253,7 +283,7 @@ por um banco (Postgres, Supabase, Turso). O resto do app não muda.
 - [ ] `DRIVER_PIN` diferente de `1234`
 - [ ] `PAYMENT_PROVIDER` **não** está em `demo`
 - [ ] `NEXT_PUBLIC_APP_URL` apontando para o domínio real (o cartaz do QR usa isso)
-- [ ] `STORAGE_DRIVER=file` ou banco de verdade — em `memory` os prêmios somem se o servidor reiniciar
+- [ ] `STORAGE_DRIVER=postgres` com `DATABASE_URL` — em `memory` os prêmios somem se o servidor reiniciar
 - [ ] Cartaz impresso a partir de `/qrcode` e testado com a câmera do celular
 - [ ] Combinado com você mesmo: quantos prêmios grandes você aguenta pagar por noite (ajuste os `weight`)
 

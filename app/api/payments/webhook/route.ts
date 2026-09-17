@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getPaymentProvider } from "@/lib/payments";
-import { creditPayment } from "@/lib/play-service";
+import { creditAndReload } from "@/lib/play-service";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
-import { findPayment } from "@/lib/store";
+import { getStore } from "@/lib/store";
 
 /**
  * Webhook do provedor (Mercado Pago). Confirma o pagamento sem esperar o
@@ -31,12 +31,14 @@ export async function POST(request: Request) {
   const externalId = String(body.data?.id ?? body.id ?? "");
   if (!externalId) return NextResponse.json({ received: true });
 
-  const found = findPayment((payment) => payment.externalId === externalId);
-  if (!found) return NextResponse.json({ received: true });
+  const payment = await getStore().findPaymentByExternalId(externalId);
+  if (!payment) return NextResponse.json({ received: true });
 
   try {
-    const status = await getPaymentProvider().checkStatus(found.payment);
-    if (status === "paid") creditPayment(found.play, found.payment);
+    const status = await getPaymentProvider().checkStatus(payment);
+    if (status === "paid") {
+      await creditAndReload(payment.id, payment.playId);
+    }
   } catch (error) {
     console.error("Falha ao processar webhook de pagamento", error);
     return NextResponse.json({ received: false }, { status: 500 });

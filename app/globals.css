@@ -273,3 +273,28 @@ html.theme-switching::view-transition-new(root) {
   outline-offset: 2px;
   border-radius: 10px;
 }
+
+/* ------------------------- Letreiro de ganhadores ------------------------- */
+/* A faixa é duplicada no componente; mover metade dela emenda o laço. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker {
+  animation: ticker-scroll 38s linear infinite;
+}
+
+.ticker:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker {
+    animation: none;
+  }
+}

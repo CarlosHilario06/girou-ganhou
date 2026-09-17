@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { creditPayment } from "@/lib/play-service";
+import { creditAndReload } from "@/lib/play-service";
 import { isDriver } from "@/lib/session";
-import { findPayment } from "@/lib/store";
+import { getStore } from "@/lib/store";
 
 /**
  * Confirmação manual de um Pix (modo pix-static): o motorista viu o dinheiro
@@ -22,18 +22,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const found = findPayment((payment) => payment.id === body.paymentId);
-  if (!found) {
+  const payment = await getStore().getPayment(body.paymentId);
+  if (!payment) {
     return NextResponse.json(
       { error: "Pagamento não encontrado." },
       { status: 404 },
     );
   }
 
-  const credited = creditPayment(found.play, found.payment, "motorista");
+  const { credited, play } = await creditAndReload(
+    payment.id,
+    payment.playId,
+    "motorista",
+  );
+
   return NextResponse.json({
     ok: true,
     credited,
-    playName: found.play.name,
+    playName: play?.name,
   });
 }

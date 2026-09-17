@@ -27,6 +27,12 @@ export type Charge = {
   selfConfirm: boolean;
 };
 
+export type Winner = {
+  name: string;
+  prize: string;
+  emoji: string;
+};
+
 export type SpinResponse = {
   prizeIndex: number;
   prize: {
@@ -51,6 +57,8 @@ export type GameApi = {
   /** Só no modo estático: o jogador confirma que pagou. */
   confirmPayment(id: string): Promise<{ status: string; play: PublicPlay }>;
   spin(): Promise<SpinResponse>;
+  /** Últimos ganhadores, para o letreiro do topo. */
+  winners(): Promise<Winner[]>;
 };
 
 async function parse(response: Response) {
@@ -105,6 +113,13 @@ const serverApi: GameApi = {
   async spin() {
     const response = await fetch("/api/spin", { method: "POST" });
     return parse(response);
+  },
+
+  async winners() {
+    const response = await fetch("/api/winners", { cache: "no-store" });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.winners ?? [];
   },
 };
 
@@ -290,6 +305,17 @@ const staticApi: GameApi = {
       code,
       play: toPublic(next),
     };
+  },
+
+  async winners() {
+    // Sem servidor não há como saber quem ganhou nos outros celulares:
+    // aparece só o que este navegador ganhou.
+    const state = readState();
+    return (state?.results ?? []).slice(-12).reverse().map((resultado) => ({
+      name: (state?.name ?? "").trim().split(/\s+/)[0] || "Você",
+      prize: resultado.title,
+      emoji: resultado.emoji,
+    }));
   },
 };
 

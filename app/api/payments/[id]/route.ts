@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getPaymentProvider } from "@/lib/payments";
-import { creditPayment, toPublicPlay } from "@/lib/play-service";
+import { creditAndReload, loadPlay, toPublicPlay } from "@/lib/play-service";
 import { getPlayId } from "@/lib/session";
-import { expireStalePayments, getPlay, savePlay } from "@/lib/store";
+import { getStore } from "@/lib/store";
 
 /**
  * Consulta de status usada pelo popup enquanto o jogador paga.
@@ -13,15 +13,18 @@ export async function GET(
   context: RouteContext<"/api/payments/[id]">,
 ) {
   const { id } = await context.params;
-  const play = getPlay(await getPlayId());
+  const playId = await getPlayId();
+  let play = playId ? await loadPlay(playId) : undefined;
 
   if (!play) {
     return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
   }
 
-  expireStalePayments(play);
-  const payment = play.payments.find((p) => p.id === id);
-  if (!payment) {
+  const store = getStore();
+  const payment = await store.getPayment(id);
+
+  // O pagamento tem de ser desta jogada: id de outra pessoa não serve.
+  if (!payment || payment.playId !== play.id) {
     return NextResponse.json(
       { error: "Cobrança não encontrada." },
       { status: 404 },
@@ -29,15 +32,18 @@ export async function GET(
   }
 
   const provider = getPaymentProvider();
+  let status = payment.status;
 
-  if (payment.status === "pending") {
+  if (status === "pending") {
     try {
-      const status = await provider.checkStatus(payment);
-      if (status === "paid") {
-        creditPayment(play, payment);
-      } else if (status === "expired") {
-        payment.status = "expired";
-        savePlay(play);
+      const remote = await provider.checkStatus(payment);
+      if (remote === "paid") {
+        const result = await creditAndReload(payment.id, play.id);
+        play = result.play ?? play;
+        status = "paid";
+      } else if (remote === "expired") {
+        await store.markPaymentExpired(payment.id);
+        status = "expired";
       }
     } catch (error) {
       // Provedor fora do ar não pode travar a tela: segue como pendente.
@@ -46,7 +52,7 @@ export async function GET(
   }
 
   return NextResponse.json({
-    status: payment.status,
+    status,
     play: toPublicPlay(play, provider.manualConfirmation),
   });
 }
