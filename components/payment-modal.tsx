@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { spinsLabel } from "@/lib/config";
 import { gameApi, type Charge } from "@/lib/game-client";
 import type { PublicPlay } from "@/lib/play-service";
 import { Button } from "./ui";
@@ -171,8 +172,8 @@ export function PaymentModal({
               Pagamento confirmado!
             </h2>
             <p className="mt-2 text-sm text-ink-muted">
-              Liberamos <strong className="text-ink">{spins} giros</strong> na sua
-              roleta. Boa sorte!
+              Liberamos <strong className="text-ink">{spinsLabel(spins)}</strong>{" "}
+              na sua roleta. Boa sorte!
             </p>
           </div>
         ) : (
@@ -183,7 +184,7 @@ export function PaymentModal({
                   Pagamento via Pix
                 </p>
                 <h2 id="pix-title" className="font-display text-2xl text-ink">
-                  {priceLabel} por {spins} giros
+                  {priceLabel} por {spinsLabel(spins)}
                 </h2>
               </div>
               <button
@@ -292,7 +293,7 @@ export function PaymentModal({
                 <ol className="space-y-1.5 rounded-2xl bg-surface-2 p-4 text-xs text-ink-muted">
                   <li>1. Abra o app do seu banco e escolha Pix.</li>
                   <li>2. Aponte para o QR Code ou cole o código.</li>
-                  <li>3. Confirme — seus giros liberam sozinhos nesta tela.</li>
+                  <li>3. Confirme — o giro libera sozinho nesta tela.</li>
                 </ol>
               </div>
             ) : null}

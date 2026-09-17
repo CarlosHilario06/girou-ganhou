@@ -139,7 +139,7 @@ type StaticState = {
 };
 
 const PRICE_CENTS = Number(process.env.NEXT_PUBLIC_PLAY_PRICE_CENTS || 300);
-const SPINS = Number(process.env.NEXT_PUBLIC_SPINS_PER_PAYMENT || 2);
+const SPINS = Number(process.env.NEXT_PUBLIC_SPINS_PER_PAYMENT || 1);
 
 function readState(): StaticState | null {
   try {

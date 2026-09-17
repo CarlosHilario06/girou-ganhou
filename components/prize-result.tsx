@@ -2,6 +2,7 @@
 
 import confetti from "canvas-confetti";
 import { useEffect } from "react";
+import { spinsLabel } from "@/lib/config";
 import { Button } from "./ui";
 
 export type SpinResult = {
@@ -98,7 +99,7 @@ export function PrizeResult({
 
         {spinsLeft > 0 ? (
           <Button variant="gold" size="lg" onClick={onSpinAgain} className="w-full">
-            Girar de novo ({spinsLeft} {spinsLeft === 1 ? "giro" : "giros"})
+            Girar de novo ({spinsLabel(spinsLeft)})
           </Button>
         ) : null}
 

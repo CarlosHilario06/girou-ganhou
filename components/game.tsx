@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { gameApi } from "@/lib/game-client";
 import type { PublicPlay } from "@/lib/play-service";
+import { spinsLabel, timesLabel } from "@/lib/config";
 import type { Prize } from "@/lib/prizes";
 import { CheckoutForm } from "./checkout-form";
 import { PaymentModal } from "./payment-modal";
@@ -153,8 +154,8 @@ export function Game({
             .
           </h1>
           <p className="mx-auto mt-3 max-w-md text-balance text-sm text-ink-muted sm:text-base">
-            {priceLabel} no Pix e você gira {spinsPerPayment} vezes. Deu prêmio,
-            o motorista entrega na hora — aqui mesmo, dentro do carro.
+            {priceLabel} no Pix e você gira {timesLabel(spinsPerPayment)}. Deu
+            prêmio, o motorista entrega na hora — aqui mesmo, dentro do carro.
           </p>
         </div>
 
@@ -217,7 +218,7 @@ export function Game({
                     </p>
                     <h2 className="font-display text-xl text-ink">
                       {spinsLeft > 0
-                        ? `Você tem ${spinsLeft} ${spinsLeft === 1 ? "giro" : "giros"}`
+                        ? `Você tem ${spinsLabel(spinsLeft)}`
                         : "Pague o Pix para girar"}
                     </h2>
                   </div>

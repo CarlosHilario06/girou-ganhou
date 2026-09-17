@@ -4,19 +4,24 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { asset, BASE_PATH } from "@/lib/asset";
+import { spinsLabel } from "@/lib/config";
 
 const EVENT_NAME = process.env.NEXT_PUBLIC_EVENT_NAME || "EMAPA 56 Anos";
 const EVENT_CITY = process.env.NEXT_PUBLIC_EVENT_CITY || "Avaré";
 const EVENT_LOGO = asset(process.env.NEXT_PUBLIC_EVENT_LOGO || "/brand/emapa.svg");
-const PRICE_CENTS = Number(process.env.NEXT_PUBLIC_PLAY_PRICE_CENTS || 300);
-const SPINS = Number(process.env.NEXT_PUBLIC_SPINS_PER_PAYMENT || 2);
 
 /**
  * O cartaz é montado no navegador: assim ele funciona igual no app completo e
  * na versão estática, e o QR sempre aponta para o endereço de onde a página
  * está sendo aberta.
  */
-export function QrPoster() {
+export function QrPoster({
+  spins,
+  priceLabel,
+}: {
+  spins: number;
+  priceLabel: string;
+}) {
   const [poster, setPoster] = useState<{ url: string; qr: string } | null>(null);
 
   useEffect(() => {
@@ -31,11 +36,6 @@ export function QrPoster() {
 
   const target = poster?.url ?? "";
   const qr = poster?.qr ?? null;
-
-  const price = (PRICE_CENTS / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
 
   return (
     <div className="grid min-h-dvh place-items-center bg-brand-900 p-6 print:bg-white print:p-0">
@@ -52,7 +52,7 @@ export function QrPoster() {
             GIROU, GANHOU!
           </p>
           <p className="mt-2 text-sm text-brand-100">
-            {SPINS} giros por {price} no Pix
+            {spinsLabel(spins)} por {priceLabel} no Pix
           </p>
         </div>
 

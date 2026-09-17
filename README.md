@@ -2,7 +2,7 @@
 
 Roleta de prêmios para motorista de aplicativo. O passageiro lê o QR Code
 colado no encosto de cabeça, se cadastra, paga **R$ 3,00 no Pix** e ganha
-**2 giros** numa roleta de 6 fatias. Deu prêmio, o motorista entrega na hora,
+**1 giro** numa roleta de 6 fatias. Deu prêmio, o motorista entrega na hora,
 dentro do carro.
 
 ### Os prêmios e a chance de cada um
@@ -35,7 +35,7 @@ cores da festa (azul escuro, dourado e verde).
 | 2 | Cadastro rápido: nome e celular |
 | 3 | A roleta aparece com os prêmios à vista, e o letreiro do topo mostra quem já ganhou |
 | 4 | Ao tocar em **GIRAR**, abre o popup com o QR Code do Pix de R$ 3,00 |
-| 5 | Pix confirmado → 2 giros liberados automaticamente |
+| 5 | Pix confirmado → o giro é liberado automaticamente |
 | 6 | Cada giro sorteia uma fatia; se for prêmio, gera um **código** (ex.: `TNV-5DG`) |
 | 7 | O motorista valida o código em `/motorista` e entrega o prêmio |
 
@@ -147,7 +147,7 @@ roda (tem teste para isso).
 
 ```env
 PLAY_PRICE_CENTS=300      # R$ 3,00
-SPINS_PER_PAYMENT=2       # giros por pagamento
+SPINS_PER_PAYMENT=1       # giros por pagamento
 PIX_EXPIRATION_MINUTES=15
 PRIZE_VALIDITY_DAYS=30
 ```

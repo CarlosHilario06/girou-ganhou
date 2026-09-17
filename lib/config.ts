@@ -23,8 +23,8 @@ export const DRIVER = {
 /** Preço de uma jogada, em centavos. R$ 3,00 por padrão. */
 export const PLAY_PRICE_CENTS = Number(process.env.PLAY_PRICE_CENTS || 300);
 
-/** Quantos giros o pagamento libera. O briefing pede 2. */
-export const SPINS_PER_PAYMENT = Number(process.env.SPINS_PER_PAYMENT || 2);
+/** Quantos giros o pagamento libera. */
+export const SPINS_PER_PAYMENT = Number(process.env.SPINS_PER_PAYMENT || 1);
 
 /** Minutos de validade do QR Code Pix antes de expirar. */
 export const PIX_EXPIRATION_MINUTES = Number(
@@ -33,6 +33,16 @@ export const PIX_EXPIRATION_MINUTES = Number(
 
 /** Dias de validade do prêmio para ser resgatado com o motorista. */
 export const PRIZE_VALIDITY_DAYS = Number(process.env.PRIZE_VALIDITY_DAYS || 30);
+
+/** "1 giro" / "2 giros" — para o texto não sair torto quando o número muda. */
+export function spinsLabel(count: number): string {
+  return `${count} ${count === 1 ? "giro" : "giros"}`;
+}
+
+/** "gira 1 vez" / "gira 2 vezes". */
+export function timesLabel(count: number): string {
+  return `${count} ${count === 1 ? "vez" : "vezes"}`;
+}
 
 export function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", {
